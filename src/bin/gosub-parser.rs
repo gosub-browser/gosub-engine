@@ -4,8 +4,13 @@ use gosub_engine::{
     bytes::{CharIterator, Confidence, Encoding},
     html5::parser::Html5Parser,
 };
-use std::fs;
-use std::process::exit;
+use ::std::process::exit;
+
+use mozjs::rooted;
+use mozjs::rust::SIMPLE_GLOBAL_CLASS;
+use mozjs::{jsapi::*, rust::JSEngine, rust::RealmOptions, rust::Runtime};
+use mozjs::jsval::UndefinedValue;
+use ::std::ptr;
 
 fn bail(message: &str) -> ! {
     println!("{}", message);
@@ -13,7 +18,7 @@ fn bail(message: &str) -> ! {
 }
 
 fn main() -> Result<()> {
-    let url = std::env::args()
+    let url = ::std::env::args()
         .nth(1)
         .unwrap_or_else(|| bail("Usage: gosub-parser <url>"));
 
@@ -29,7 +34,7 @@ fn main() -> Result<()> {
         response.into_string()?
     } else {
         // Get html from the file
-        fs::read_to_string(&url)?
+        ::std::fs::read_to_string(&url)?
     };
 
     let mut chars = CharIterator::new();
@@ -50,5 +55,34 @@ fn main() -> Result<()> {
         println!("Parse Error: {}", e.message)
     }
 
+    let engine = JSEngine::init().expect("failed to initalize JS engine");
+    let runtime = Runtime::new(engine.handle());
+    assert!(!runtime.cx().is_null(), "failed to create JSContext");
+
+    run(runtime);
+
     Ok(())
+}
+
+
+fn run(rt: Runtime) {
+    let cx = rt.cx();
+    let options = RealmOptions::default();
+    rooted!(in(cx) let global = unsafe {
+        JS_NewGlobalObject(cx, &SIMPLE_GLOBAL_CLASS, ptr::null_mut(),
+                           OnNewGlobalHookOption::FireOnNewGlobalHook,
+                           &*options)
+    });
+
+    let filename: &'static str = "inline.js";
+    let lineno: u32 = 1;
+
+    rooted!(in(rt.cx()) let mut rval = UndefinedValue());
+
+    let source: &'static str = "document.write(\"hello world from spidermonkey\"); 40 + 2";
+    let res = rt.evaluate_script(global.handle(), source, filename, lineno, rval.handle_mut());
+
+    if res.is_ok() {
+        println!("{}", rval.get().to_int32());
+    }
 }
