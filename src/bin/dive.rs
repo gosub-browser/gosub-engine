@@ -4,14 +4,13 @@ use crossterm::{
     execute,
     terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
 };
-use crossterm::event::{KeyCode, KeyModifiers};
+use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 use ratatui::{prelude::{CrosstermBackend, Terminal, Frame}, widgets::Paragraph};
 use ratatui::layout::{Constraint, Direction, Layout};
 use ratatui::prelude::{Line, Modifier, Stylize};
 use ratatui::style::{Color, Style};
-use ratatui::widgets::{Block, Borders, Tabs, Wrap};
+use ratatui::widgets::{Block, Borders, Padding, Tabs, Wrap};
 use ratatui::text::{Span, Text};
-
 
 const HELPTEXT: &'static str = r#"
 
@@ -22,13 +21,13 @@ This is the help screen for Gosub Dive. It is a work in progress and displays th
  #2Function keys
  #2-------------
   #1F1#0      Display this help screen
-  #1F2#0
+  #1F2#0      Open tab list
   #1F3#0
   #1F4#0
   #1F5#0
   #1F6#0
-  #1F7#0
-  #1F8#0
+  #1F7#0      Opens history menu
+  #1F8#0      Opens bookmark menu
   #1F9#0      Opens top menu
 
  #2Navigation
@@ -36,6 +35,8 @@ This is the help screen for Gosub Dive. It is a work in progress and displays th
   #1CTRL-N#0    Opens new tab with blank page
   #1CTRL-G#0    Asks for an URL to open
   #1CTRL-B#0    Browse back to previous page
+  #1CTRL-R#0    Reload current page
+  #1CTRL-W#0    Close current tab
 
  #2General commands
  #2----------------
@@ -43,24 +44,9 @@ This is the help screen for Gosub Dive. It is a work in progress and displays th
 
  #2Tab management
  #2--------------
-  #1CTRL-0..9#0 Switch to tab 0..9
+  #1ALT-0..9#0  Switch to tab 0..9
+  #1CTRL-I#0    Rename tab
   #1TAB#0       Switch to next tab
-
- #2Navigation
- #2----------
-  #1CTRL-N#0    Opens new tab with blank page
-  #1CTRL-G#0    Asks for an URL to open
-  #1CTRL-B#0    Browse back to previous page
-
- #2General commands
- #2----------------
-  #1CTRL-Q#0    Quit Gosub Dive
-
- #2Tab management
- #2--------------
-  #1CTRL-0..9#0 Switch to tab 0..9
-  #1TAB#0       Switch to next tab
-
 "#;
 
 struct Tab {
@@ -77,6 +63,7 @@ struct App {
     current_tab: usize,
     show_help: bool,
     help_scroll: u16,
+    status: String,
 }
 
 fn startup() -> Result<()> {
@@ -111,8 +98,7 @@ fn render_help(app: &App, f: &mut Frame) {
         ])
         .split(margins[1])[1]; // Select the middle part horizontally within the vertical middle part
 
-    let help_block = Block::default().title(" Help ").borders(Borders::ALL);
-
+    let help_block = Block::default().title(" Help ").borders(Borders::ALL).padding(Padding::Uniform(1));
 
     // generate help text, based on #N coloring
 
@@ -150,24 +136,24 @@ fn render_help(app: &App, f: &mut Frame) {
             let ch = line.chars().nth(idx).unwrap();
             match ch {
                 '#' => {
-                    if line.chars().nth(idx+1).unwrap().is_ascii_digit() {
-                        let line_part: String = line.chars().skip(start_idx).take(idx-start_idx).collect();
+                    if line.chars().nth(idx + 1).unwrap().is_ascii_digit() {
+                        let line_part: String = line.chars().skip(start_idx).take(idx - start_idx).collect();
                         partial_line.push(Span::styled(line_part, cs));
                         start_idx = idx + 2;
 
-                        let col_idx = line.chars().nth(idx+1).unwrap().to_digit(10).unwrap();
+                        let col_idx = line.chars().nth(idx + 1).unwrap().to_digit(10).unwrap();
                         cs = cols[col_idx as usize];
                         idx += 2;
                     } else {
                         // Seems like a regular #
                         idx += 1;
                     }
-                },
+                }
                 _ => idx += 1,
             }
         }
 
-        let line_part: String = line.chars().skip(start_idx).take(idx-start_idx).collect();
+        let line_part: String = line.chars().skip(start_idx).take(idx - start_idx).collect();
         partial_line.push(Span::styled(line_part, cs));
 
         lines.push(Line::from(partial_line.clone()));
@@ -179,7 +165,7 @@ fn render_help(app: &App, f: &mut Frame) {
         .block(help_block)
         .wrap(Wrap { trim: false })
         .scroll((app.help_scroll, 0))
-    ;
+        ;
 
     // f.render_widget(help_paragraph, help_block_area);
     f.render_widget(help_paragraph, help_block_area);
@@ -222,7 +208,7 @@ fn ui(app: &App, f: &mut Frame) {
         menu_tiles[2 + app.menu_item_active * 2] =
             Span::styled(
                 menu_tiles[2 + app.menu_item_active * 2].content.clone(),
-                Style::default().bg(Color::Green).fg(Color::White).add_modifier(Modifier::BOLD)
+                Style::default().bg(Color::Green).fg(Color::White).add_modifier(Modifier::BOLD),
             )
         ;
     }
@@ -248,7 +234,7 @@ fn ui(app: &App, f: &mut Frame) {
 
 
     let status = Paragraph::new(Line::from(vec![
-        Span::styled("Press F1 for help", Style::default().add_modifier(Modifier::BOLD)),
+        Span::styled(app.status.clone(), Style::default().add_modifier(Modifier::BOLD)),
         Span::raw(" | "),
         Span::raw("Line 1, Column 1"),
     ])).style(Style::default().bg(Color::Blue).bold());
@@ -260,36 +246,95 @@ fn ui(app: &App, f: &mut Frame) {
     }
 }
 
-fn update(app: &mut App) -> Result<()> {
-    if event::poll(std::time::Duration::from_millis(250))? {
-        if let Key(key) = event::read()? {
+fn process_keys_help(app: &mut App, key: KeyEvent) -> Result<()> {
+    match key.code {
+        KeyCode::F(1) => {
+            app.show_help = !app.show_help;
+            app.help_scroll = 0;
+        }
+        KeyCode::Up => {
+            if app.help_scroll > 0 {
+                app.help_scroll -= 1;
+            }
+        },
+        KeyCode::Down => {
+            app.help_scroll += 1;
+        },
+        Char('q') if key.modifiers.contains(KeyModifiers::CONTROL) => app.should_quit = true,
+        _ => {}
+    }
+    Ok(())
+}
 
-            if key.kind == event::KeyEventKind::Press {
-                match key.code {
-                    Char('0') if key.modifiers.contains(KeyModifiers::CONTROL) => app.current_tab = 0,
-                    Char('1') if key.modifiers.contains(KeyModifiers::CONTROL) => app.current_tab = 1,
-                    Char('2') if key.modifiers.contains(KeyModifiers::CONTROL) => app.current_tab = 2,
-                    Char('3') if key.modifiers.contains(KeyModifiers::CONTROL) => app.current_tab = 3,
-                    Char('4') if key.modifiers.contains(KeyModifiers::CONTROL) => app.current_tab = 4,
-                    Char('5') if key.modifiers.contains(KeyModifiers::CONTROL) => app.current_tab = 5,
-                    Char('6') if key.modifiers.contains(KeyModifiers::CONTROL) => app.current_tab = 6,
-                    Char('7') if key.modifiers.contains(KeyModifiers::CONTROL) => app.current_tab = 7,
-                    Char('8') if key.modifiers.contains(KeyModifiers::CONTROL) => app.current_tab = 8,
-                    Char('9') if key.modifiers.contains(KeyModifiers::CONTROL) => app.current_tab = 9,
-                    KeyCode::F(1) => {
-                        app.show_help = !app.show_help;
-                        app.help_scroll = 0;
-                    },
+fn process_keys_main(app: &mut App, key: KeyEvent) -> Result<()> {
+    match key.code {
+        Char('0') if key.modifiers.contains(KeyModifiers::ALT) => switch_tab(app, 0),
+        Char('1') if key.modifiers.contains(KeyModifiers::ALT) => switch_tab(app, 1),
+        Char('2') if key.modifiers.contains(KeyModifiers::ALT) => switch_tab(app, 2),
+        Char('3') if key.modifiers.contains(KeyModifiers::ALT) => switch_tab(app, 3),
+        Char('4') if key.modifiers.contains(KeyModifiers::ALT) => switch_tab(app, 4),
+        Char('5') if key.modifiers.contains(KeyModifiers::ALT) => switch_tab(app, 5),
+        Char('6') if key.modifiers.contains(KeyModifiers::ALT) => switch_tab(app, 6),
+        Char('7') if key.modifiers.contains(KeyModifiers::ALT) => switch_tab(app, 7),
+        Char('8') if key.modifiers.contains(KeyModifiers::ALT) => switch_tab(app, 8),
+        Char('9') if key.modifiers.contains(KeyModifiers::ALT) => switch_tab(app, 9),
 
-                    KeyCode::Tab => app.current_tab = (app.current_tab + 1 ) % app.tabs.len(),
-                    KeyCode::F(9) => app.menu_active = !app.menu_active,
+        KeyCode::F(1) => {
+            app.show_help = !app.show_help;
+            app.help_scroll = 0;
+            if app.show_help {
+                app.status = "Closed help screen".into();
+            } else {
+                app.status = "Opened help screen".into();
+            }
+        }
+        KeyCode::F(9) => app.menu_active = !app.menu_active,
+        KeyCode::Tab => {
+            app.current_tab = (app.current_tab + 1) % app.tabs.len();
+            app.status = format!("Switched to tab {}", app.current_tab);
+        },
 
-                    Char('q') if key.modifiers.contains(KeyModifiers::CONTROL) => app.should_quit = true,
-                    _ => {},
+        Char('w') if key.modifiers.contains(KeyModifiers::CONTROL) => {
+            if app.tabs.len() > 1 {
+                app.tabs.remove(app.current_tab);
+                app.status = format!("Closed tab {}", app.current_tab);
+                if app.current_tab > 0 {
+                    app.current_tab -= 1;
                 }
+            } else {
+                app.status = "Can't close last tab".into();
+            }
+        },
+        Char('n') if key.modifiers.contains(KeyModifiers::CONTROL) => {
+            app.tabs.push(Tab {
+                name: "New Tab".to_string(),
+                url: "gosub://blank".to_string(),
+                content: String::new(),
+            });
+            app.status = format!("Opened new tab {}", app.tabs.len() - 1);
+            app.current_tab = app.tabs.len() - 1;
+        },
+        Char('q') if key.modifiers.contains(KeyModifiers::CONTROL) => app.should_quit = true,
+        _ => {},
+    }
+    Ok(())
+}
+
+fn update(app: &mut App) -> Result<()> {
+    if ! event::poll(std::time::Duration::from_millis(250))? {
+        return Ok(());
+    }
+
+    if let Key(key) = event::read()? {
+        if key.kind == event::KeyEventKind::Press {
+            if app.show_help {
+                process_keys_help(app, key)?;
+            } else {
+                process_keys_main(app, key)?;
             }
         }
     }
+
     Ok(())
 }
 
@@ -316,6 +361,7 @@ fn run() -> Result<()> {
         current_tab: 0,
         show_help: false,
         help_scroll: 0,
+        status: "Press F1 for help".into(),
     };
 
     loop {
@@ -344,6 +390,7 @@ fn main() -> Result<()> {
         current_tab: 0,
         show_help: false,
         help_scroll: 0,
+        status: "Press F1 for help".into(),
     };
 
     let backend = ratatui::backend::TestBackend::new(5, 5);
@@ -357,4 +404,11 @@ fn main() -> Result<()> {
     shutdown()?;
     status?;
     Ok(())
+}
+
+fn switch_tab(app: &mut App, tab: usize) {
+    if tab < app.tabs.len() {
+        app.current_tab = tab;
+        app.status = format!("Switched to tab {}", app.current_tab);
+    }
 }
