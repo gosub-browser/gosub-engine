@@ -16,8 +16,8 @@ use crate::css_values::{
 /// Map of all declared values for all nodes in the document
 #[derive(Default)]
 pub struct RenderTree {
-    nodes: HashMap<NodeId, RenderTreeNode>,
-    root: NodeId,
+    pub nodes: HashMap<NodeId, RenderTreeNode>,
+    pub root: NodeId,
 }
 
 impl RenderTree {
@@ -47,6 +47,16 @@ impl RenderTree {
     /// Returns the root node of the render tree
     pub fn get_root(&self) -> &RenderTreeNode {
         self.nodes.get(&self.root).expect("root node")
+    }
+
+    /// Returns the node with the given id
+    pub fn get_node(&self, id: NodeId) -> Option<&RenderTreeNode> {
+        self.nodes.get(&id)
+    }
+
+    /// Returns the children of the given node
+    pub fn get_children(&self, id: NodeId) -> Option<&Vec<NodeId>> {
+        self.nodes.get(&id).map(|node| &node.children)
     }
 
     /// INserts a new node into the render tree, note that you are responsible for the node id
@@ -246,6 +256,19 @@ impl RenderTreeNode {
     /// Returns true if the node is a text node
     pub fn is_text(&self) -> bool {
         matches!(self.data, NodeData::Text(_))
+    }
+
+    /// Returns the requested property for the node
+    pub fn get_property(&mut self, prop_name: &str) -> Option<&mut CssProperty> {
+        self.properties.properties.get_mut(prop_name)
+    }
+
+    /// Returns the requested attribute for the node
+    pub fn get_attribute(&self, attr_name: &str) -> Option<&String> {
+        match &self.data {
+            NodeData::Element(element) => element.attributes.get(attr_name),
+            _ => None,
+        }
     }
 }
 

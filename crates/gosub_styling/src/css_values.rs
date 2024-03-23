@@ -439,6 +439,19 @@ impl CssValue {
             _ => None,
         }
     }
+
+    pub fn unit_to_px(&self) -> f32 {
+        //TODO: Implement the rest of the units
+        match self {
+            CssValue::Unit(val, unit) => match unit.as_str() {
+                "px" => *val,
+                "em" => *val * 16.0,
+                "rem" => *val * 16.0,
+                _ => *val,
+            },
+            _ => 0.0,
+        }
+    }
 }
 
 #[cfg(test)]
