@@ -5,7 +5,7 @@ use taffy::{
 };
 
 use gosub_styling::css_values::CssValue;
-use gosub_styling::render_tree::RenderTreeNode;
+use gosub_styling::render_tree::{RenderNodeData, RenderTreeNode};
 
 pub(crate) fn parse_len(node: &mut RenderTreeNode, name: &str) -> LengthPercentage {
     let Some(property) = node.get_property(name) else {
@@ -17,6 +17,7 @@ pub(crate) fn parse_len(node: &mut RenderTreeNode, name: &str) -> LengthPercenta
     match &property.actual {
         CssValue::Percentage(value) => LengthPercentage::Percent(*value),
         CssValue::Unit(..) => LengthPercentage::Length(property.actual.unit_to_px()),
+        CssValue::String(_) => LengthPercentage::Length(property.actual.unit_to_px()), //HACK
         _ => LengthPercentage::Length(0.0),
     }
 }
@@ -31,35 +32,47 @@ pub(crate) fn parse_len_auto(node: &mut RenderTreeNode, name: &str) -> LengthPer
     match &property.actual {
         CssValue::String(value) => match value.as_str() {
             "auto" => LengthPercentageAuto::Auto,
-            _ => LengthPercentageAuto::Auto,
+            _ => LengthPercentageAuto::Length(property.actual.unit_to_px()), //HACK
         },
         CssValue::Percentage(value) => LengthPercentageAuto::Percent(*value),
         CssValue::Unit(..) => LengthPercentageAuto::Length(property.actual.unit_to_px()),
+        _ => LengthPercentageAuto::Auto,
     }
 }
 
 pub(crate) fn parse_dimension(node: &mut RenderTreeNode, name: &str) -> Dimension {
+    let mut auto = Dimension::Auto;
+    if let RenderNodeData::Text(text) = &node.data {
+        if name == "width" {
+            auto = Dimension::Length(text.width);
+        } else if name == "height" {
+            auto = Dimension::Length(text.height);
+        }
+    }
+
     let Some(property) = node.get_property(name) else {
-        return Dimension::Auto;
+        return auto;
     };
 
     property.compute_value();
 
+    if name == "width" {
+        println!("Width: {:?}", property.actual);
+    }
+
     match &property.actual {
         CssValue::String(value) => match value.as_str() {
-            "auto" => Dimension::Auto,
-            _ => Dimension::Auto,
+            "auto" => auto,
+            _ => Dimension::Length(property.actual.unit_to_px()), //HACK
         },
         CssValue::Percentage(value) => Dimension::Percent(*value),
         CssValue::Unit(..) => Dimension::Length(property.actual.unit_to_px()),
+        _ => auto,
     }
 }
 
 pub(crate) fn parse_align_i(node: &mut RenderTreeNode, name: &str) -> Option<AlignItems> {
-    let Some(display) = node.get_property(name) else {
-        return None;
-    };
-
+    let display = node.get_property(name)?;
     display.compute_value();
 
     let CssValue::String(ref value) = display.actual else {
@@ -79,9 +92,7 @@ pub(crate) fn parse_align_i(node: &mut RenderTreeNode, name: &str) -> Option<Ali
 }
 
 pub(crate) fn parse_align_c(node: &mut RenderTreeNode, name: &str) -> Option<AlignContent> {
-    let Some(display) = node.get_property(name) else {
-        return None;
-    };
+    let display = node.get_property(name)?;
 
     display.compute_value();
 
