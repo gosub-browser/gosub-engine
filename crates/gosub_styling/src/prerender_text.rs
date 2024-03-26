@@ -122,7 +122,7 @@ impl FontRendererCache {
         index
     }
 
-    fn query(&mut self, pattern: FcPattern) -> &mut TextRenderer {
+    pub fn query(&mut self, pattern: FcPattern) -> &mut TextRenderer {
         if self.backup.pattern == pattern {
             return &mut self.backup;
         }
@@ -215,8 +215,8 @@ pub struct TextRenderer {
 
 #[derive(Clone)]
 pub struct FontSizing {
-    font_size: f32,
-    line_height: f32,
+    pub font_size: f32,
+    pub line_height: f32,
 }
 
 #[derive(Debug)]

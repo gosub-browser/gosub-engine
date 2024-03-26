@@ -116,9 +116,7 @@ pub(crate) fn parse_max_size(node: &mut RenderTreeNode) -> Size<Dimension> {
 }
 
 pub(crate) fn parse_aspect_ratio(node: &mut RenderTreeNode) -> Option<f32> {
-    let Some(aspect_ratio) = node.get_property("aspect-ratio") else {
-        return None;
-    };
+    let aspect_ratio = node.get_property("aspect-ratio")?;
 
     aspect_ratio.compute_value();
 
@@ -132,9 +130,7 @@ pub(crate) fn parse_aspect_ratio(node: &mut RenderTreeNode) -> Option<f32> {
                 let Ok(regex) = Regex::new(r"(\d+\.?\d*)\s*/\s*(\d+\.?\d*)") else {
                     return None;
                 };
-                let Some(captures) = regex.captures(value) else {
-                    return None;
-                };
+                let captures = regex.captures(value)?;
 
                 if captures.len() != 3 {
                     return None;
