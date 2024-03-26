@@ -286,7 +286,7 @@ impl RenderNodeData {
 
                 let fs;
 
-                if let Some(mut prop) = props.get("font-size") {
+                if let Some(prop) = props.get("font-size") {
                     prop.compute_value();
 
                     fs = if let CssValue::String(ref fs) = prop.actual {
