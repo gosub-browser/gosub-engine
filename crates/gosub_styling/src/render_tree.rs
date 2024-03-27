@@ -194,13 +194,24 @@ impl RenderTree {
             let binding = document.get();
             let current_node = binding.get_node_by_id(current_node_id).unwrap();
 
-            let Ok(data) =
-                RenderNodeData::from_node_data(current_node.data.clone(), &mut css_map_entry)
-            else {
-                eprintln!(
-                    "Failed to create render node data for node {:?}",
-                    current_node_id
-                );
+            let mut data = || {
+                if let Some(parent_id) = current_node.parent {
+                    if let Some(parent) = self.nodes.get_mut(&parent_id) {
+                        let parent_props = Some(&mut parent.properties);
+
+                        return RenderNodeData::from_node_data(
+                            current_node.data.clone(),
+                            parent_props,
+                        )
+                        .ok();
+                    };
+                };
+
+                RenderNodeData::from_node_data(current_node.data.clone(), None).ok()
+            };
+
+            let Some(data) = data() else {
+                eprintln!("Failed to create node data for node: {:?}", current_node_id);
                 continue;
             };
 
@@ -261,11 +272,12 @@ pub enum RenderNodeData {
 }
 
 impl RenderNodeData {
-    pub fn from_node_data(node: NodeData, props: &mut CssProperties) -> Result<Self> {
+    pub fn from_node_data(node: NodeData, props: Option<&mut CssProperties>) -> Result<Self> {
         Ok(match node {
             NodeData::Document(data) => RenderNodeData::Document(data),
             NodeData::Element(data) => RenderNodeData::Element(data),
             NodeData::Text(data) => {
+                let props = props.ok_or(anyhow::anyhow!("No properties found"))?;
                 let ff;
                 if let Some(prop) = props.get("font-family") {
                     prop.compute_value();
@@ -293,13 +305,13 @@ impl RenderNodeData {
                         if fs.ends_with("px") {
                             fs.trim_end_matches("px").parse::<f32>().unwrap_or(12.0)
                         } else {
-                            12.0
+                            12.01
                         }
                     } else {
-                        12.0
+                        12.02
                     };
                 } else {
-                    fs = 12.0
+                    fs = 12.03
                 };
 
                 let text = PrerenderText::new(data.value.clone(), fs, ff)?;

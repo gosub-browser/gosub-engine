@@ -63,6 +63,10 @@ pub(crate) fn parse_dimension(node: &mut RenderTreeNode, name: &str) -> Dimensio
     match &property.actual {
         CssValue::String(value) => match value.as_str() {
             "auto" => auto,
+            s if s.ends_with("%") => {
+                let value = s.trim_end_matches("%").parse::<f32>().unwrap_or(0.0);
+                Dimension::Percent(value)
+            }
             _ => Dimension::Length(property.actual.unit_to_px()), //HACK
         },
         CssValue::Percentage(value) => Dimension::Percent(*value),

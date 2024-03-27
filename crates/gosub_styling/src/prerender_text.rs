@@ -276,8 +276,6 @@ impl PrerenderText {
             .chars()
             .filter_map(|c| {
                 if c == '\n' {
-                    width = width.max(pen_x);
-                    pen_x = 0.0;
                     return None;
                 }
 
