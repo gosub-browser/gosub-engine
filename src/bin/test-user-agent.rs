@@ -1,3 +1,4 @@
+#![allow(clippy::unwrap_used, clippy::expect_used)]
 use gosub_html5::node::{Node, NodeData};
 use gosub_html5::parser::document::DocumentBuilder;
 use gosub_html5::parser::{document::Document, Html5Parser};
@@ -28,7 +29,7 @@ fn main() -> Result<()> {
 
     // If the encoding confidence is not Confidence::Certain, we should detect the encoding.
     if !chars.is_certain_encoding() {
-        chars.detect_encoding()
+        chars.detect_encoding();
     }
 
     let document = DocumentBuilder::new_document(None);

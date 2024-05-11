@@ -26,6 +26,7 @@ pub struct RenderTree {
 
 impl RenderTree {
     // Generates a new render tree with a root node
+    #[must_use]
     pub fn with_capacity(capacity: usize) -> Self {
         let mut tree = Self {
             nodes: HashMap::with_capacity(capacity),
@@ -50,11 +51,13 @@ impl RenderTree {
     }
 
     /// Returns the root node of the render tree
+    #[must_use]
     pub fn get_root(&self) -> &RenderTreeNode {
         self.nodes.get(&self.root).expect("root node")
     }
 
     /// Returns the node with the given id
+    #[must_use]
     pub fn get_node(&self, id: NodeId) -> Option<&RenderTreeNode> {
         self.nodes.get(&id)
     }
@@ -65,6 +68,7 @@ impl RenderTree {
     }
 
     /// Returns the children of the given node
+    #[must_use]
     pub fn get_children(&self, id: NodeId) -> Option<&Vec<NodeId>> {
         self.nodes.get(&id).map(|node| &node.children)
     }
@@ -119,6 +123,7 @@ impl RenderTree {
     }
 
     /// Retrieves the property for the given node, or None when not found
+    #[must_use]
     pub fn get_property(&self, node_id: NodeId, prop_name: &str) -> Option<CssProperty> {
         let props = self.nodes.get(&node_id);
         props?;
@@ -132,13 +137,15 @@ impl RenderTree {
     }
 
     /// Retrieves the value for the given property for the given node, or None when not found
+    #[must_use]
     pub fn get_all_properties(&self, node_id: NodeId) -> Option<&CssProperties> {
         self.nodes.get(&node_id).map(|props| &props.properties)
     }
 
     /// Generate a render tree from the given document
+    #[must_use]
     pub fn from_document(document: DocumentHandle) -> Self {
-        let mut render_tree = RenderTree::with_capacity(document.get().count_nodes());
+        let mut render_tree = Self::with_capacity(document.get().count_nodes());
 
         render_tree.generate_from(document);
         render_tree.remove_unrenderable_nodes();
@@ -157,9 +164,9 @@ impl RenderTree {
                 .get_node_by_id(current_node_id)
                 .expect("node not found");
 
-            for sheet in document.get().stylesheets.iter() {
-                for rule in sheet.rules.iter() {
-                    for selector in rule.selectors().iter() {
+            for sheet in &document.get().stylesheets {
+                for rule in &sheet.rules {
+                    for selector in rule.selectors() {
                         if !match_selector(
                             DocumentHandle::clone(&document),
                             current_node_id,
@@ -169,7 +176,7 @@ impl RenderTree {
                         }
 
                         // Selector matched, so we add all declared values to the map
-                        for declaration in rule.declarations().iter() {
+                        for declaration in rule.declarations() {
                             let prop_name = declaration.property.clone();
 
                             let declaration = DeclarationProperty {
@@ -214,7 +221,7 @@ impl RenderTree {
             };
 
             let Ok(data) = data() else {
-                eprintln!("Failed to create node data for node: {:?}", current_node_id);
+                eprintln!("Failed to create node data for node: {current_node_id:?}");
                 continue;
             };
 
@@ -277,8 +284,8 @@ pub enum RenderNodeData {
 impl RenderNodeData {
     pub fn from_node_data(node: NodeData, props: Option<&mut CssProperties>) -> Result<Self> {
         Ok(match node {
-            NodeData::Document(data) => RenderNodeData::Document(data),
-            NodeData::Element(data) => RenderNodeData::Element(data),
+            NodeData::Document(data) => Self::Document(data),
+            NodeData::Element(data) => Self::Element(data),
             NodeData::Text(data) => {
                 let text = data.value.trim();
                 let text = text.replace('\n', "");
@@ -297,7 +304,7 @@ impl RenderNodeData {
                         let ff = font_family
                             .trim()
                             .split(',')
-                            .map(|ff| ff.to_string())
+                            .map(std::string::ToString::to_string)
                             .collect::<Vec<String>>();
 
                         return Some(font_cache.query_ff(ff));
@@ -325,10 +332,10 @@ impl RenderNodeData {
                     .unwrap_or(DEFAULT_FS);
 
                 let text = PrerenderText::with_renderer(text, fs, font)?;
-                RenderNodeData::Text(text)
+                Self::Text(text)
             }
-            NodeData::Comment(data) => RenderNodeData::Comment(data),
-            NodeData::DocType(data) => RenderNodeData::DocType(data),
+            NodeData::Comment(data) => Self::Comment(data),
+            NodeData::DocType(data) => Self::DocType(data),
         })
     }
 }
@@ -346,11 +353,13 @@ pub struct RenderTreeNode {
 
 impl RenderTreeNode {
     /// Returns true if the node is an element node
+    #[must_use]
     pub fn is_element(&self) -> bool {
         matches!(self.data, RenderNodeData::Element(_))
     }
 
     /// Returns true if the node is a text node
+    #[must_use]
     pub fn is_text(&self) -> bool {
         matches!(self.data, RenderNodeData::Text(_))
     }
@@ -361,6 +370,7 @@ impl RenderTreeNode {
     }
 
     /// Returns the requested attribute for the node
+    #[must_use]
     pub fn get_attribute(&self, attr_name: &str) -> Option<&String> {
         match &self.data {
             RenderNodeData::Element(element) => element.attributes.get(attr_name),

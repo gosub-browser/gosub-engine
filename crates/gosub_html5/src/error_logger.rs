@@ -60,95 +60,96 @@ pub enum ParserError {
 
 impl ParserError {
     /// Parser errors as string representation
+    #[must_use]
     pub fn as_str(&self) -> &'static str {
         match self {
-            ParserError::AbruptDoctypePublicIdentifier => "abrupt-doctype-public-identifier",
-            ParserError::AbruptDoctypeSystemIdentifier => "abrupt-doctype-system-identifier",
-            ParserError::AbsenceOfDigitsInNumericCharacterReference => {
+            Self::AbruptDoctypePublicIdentifier => "abrupt-doctype-public-identifier",
+            Self::AbruptDoctypeSystemIdentifier => "abrupt-doctype-system-identifier",
+            Self::AbsenceOfDigitsInNumericCharacterReference => {
                 "absence-of-digits-in-numeric-character-reference"
             }
-            ParserError::CdataInHtmlContent => "cdata-in-html-content",
-            ParserError::CharacterReferenceOutsideUnicodeRange => {
+            Self::CdataInHtmlContent => "cdata-in-html-content",
+            Self::CharacterReferenceOutsideUnicodeRange => {
                 "character-reference-outside-unicode-range"
             }
-            ParserError::ControlCharacterInInputStream => "control-character-in-input-stream",
-            ParserError::ControlCharacterReference => "control-character-reference",
-            ParserError::EndTagWithAttributes => "end-tag-with-attributes",
-            ParserError::DuplicateAttribute => "duplicate-attribute",
-            ParserError::EndTagWithTrailingSolidus => "end-tag-with-trailing-solidus",
-            ParserError::EofBeforeTagName => "eof-before-tag-name",
-            ParserError::EofInCdata => "eof-in-cdata",
-            ParserError::EofInComment => "eof-in-comment",
-            ParserError::EofInDoctype => "eof-in-doctype",
-            ParserError::EofInScriptHtmlCommentLikeText => "eof-in-script-html-comment-like-text",
-            ParserError::EofInTag => "eof-in-tag",
-            ParserError::IncorrectlyClosedComment => "incorrectly-closed-comment",
-            ParserError::IncorrectlyOpenedComment => "incorrectly-opened-comment",
-            ParserError::InvalidCharacterSequenceAfterDoctypeName => {
+            Self::ControlCharacterInInputStream => "control-character-in-input-stream",
+            Self::ControlCharacterReference => "control-character-reference",
+            Self::EndTagWithAttributes => "end-tag-with-attributes",
+            Self::DuplicateAttribute => "duplicate-attribute",
+            Self::EndTagWithTrailingSolidus => "end-tag-with-trailing-solidus",
+            Self::EofBeforeTagName => "eof-before-tag-name",
+            Self::EofInCdata => "eof-in-cdata",
+            Self::EofInComment => "eof-in-comment",
+            Self::EofInDoctype => "eof-in-doctype",
+            Self::EofInScriptHtmlCommentLikeText => "eof-in-script-html-comment-like-text",
+            Self::EofInTag => "eof-in-tag",
+            Self::IncorrectlyClosedComment => "incorrectly-closed-comment",
+            Self::IncorrectlyOpenedComment => "incorrectly-opened-comment",
+            Self::InvalidCharacterSequenceAfterDoctypeName => {
                 "invalid-character-sequence-after-doctype-name"
             }
-            ParserError::InvalidFirstCharacterOfTagName => "invalid-first-character-of-tag-name",
-            ParserError::MissingAttributeValue => "missing-attribute-value",
-            ParserError::MissingDoctypeName => "missing-doctype-name",
-            ParserError::MissingDoctypePublicIdentifier => "missing-doctype-public-identifier",
-            ParserError::MissingDoctypeSystemIdentifier => "missing-doctype-system-identifier",
-            ParserError::MissingEndTagName => "missing-end-tag-name",
-            ParserError::MissingQuoteBeforeDoctypePublicIdentifier => {
+            Self::InvalidFirstCharacterOfTagName => "invalid-first-character-of-tag-name",
+            Self::MissingAttributeValue => "missing-attribute-value",
+            Self::MissingDoctypeName => "missing-doctype-name",
+            Self::MissingDoctypePublicIdentifier => "missing-doctype-public-identifier",
+            Self::MissingDoctypeSystemIdentifier => "missing-doctype-system-identifier",
+            Self::MissingEndTagName => "missing-end-tag-name",
+            Self::MissingQuoteBeforeDoctypePublicIdentifier => {
                 "missing-quote-before-doctype-public-identifier"
             }
-            ParserError::MissingQuoteBeforeDoctypeSystemIdentifier => {
+            Self::MissingQuoteBeforeDoctypeSystemIdentifier => {
                 "missing-quote-before-doctype-system-identifier"
             }
-            ParserError::MissingSemicolonAfterCharacterReference => {
+            Self::MissingSemicolonAfterCharacterReference => {
                 "missing-semicolon-after-character-reference"
             }
-            ParserError::MissingWhitespaceAfterDoctypePublicKeyword => {
+            Self::MissingWhitespaceAfterDoctypePublicKeyword => {
                 "missing-whitespace-after-doctype-public-keyword"
             }
-            ParserError::MissingWhitespaceAfterDoctypeSystemKeyword => {
+            Self::MissingWhitespaceAfterDoctypeSystemKeyword => {
                 "missing-whitespace-after-doctype-system-keyword"
             }
-            ParserError::MissingWhitespaceBeforeDoctypeName => {
+            Self::MissingWhitespaceBeforeDoctypeName => {
                 "missing-whitespace-before-doctype-name"
             }
-            ParserError::MissingWhitespaceBetweenAttributes => {
+            Self::MissingWhitespaceBetweenAttributes => {
                 "missing-whitespace-between-attributes"
             }
-            ParserError::MissingWhitespaceBetweenDoctypePublicAndSystemIdentifiers => {
+            Self::MissingWhitespaceBetweenDoctypePublicAndSystemIdentifiers => {
                 "missing-whitespace-between-doctype-public-and-system-identifiers"
             }
-            ParserError::NestedComment => "nested-comment",
-            ParserError::NoncharacterCharacterReference => "noncharacter-character-reference",
-            ParserError::NoncharacterInInputStream => "noncharacter-in-input-stream",
-            ParserError::NonVoidHtmlElementStartTagWithTrailingSolidus => {
+            Self::NestedComment => "nested-comment",
+            Self::NoncharacterCharacterReference => "noncharacter-character-reference",
+            Self::NoncharacterInInputStream => "noncharacter-in-input-stream",
+            Self::NonVoidHtmlElementStartTagWithTrailingSolidus => {
                 "non-void-html-element-start-tag-with-trailing-solidus"
             }
-            ParserError::NullCharacterReference => "null-character-reference",
-            ParserError::SurrogateCharacterReference => "surrogate-character-reference",
-            ParserError::SurrogateInInputStream => "surrogate-in-input-stream",
-            ParserError::UnexpectedCharacterAfterDoctypeSystemIdentifier => {
+            Self::NullCharacterReference => "null-character-reference",
+            Self::SurrogateCharacterReference => "surrogate-character-reference",
+            Self::SurrogateInInputStream => "surrogate-in-input-stream",
+            Self::UnexpectedCharacterAfterDoctypeSystemIdentifier => {
                 "unexpected-character-after-doctype-system-identifier"
             }
-            ParserError::UnexpectedCharacterInAttributeName => {
+            Self::UnexpectedCharacterInAttributeName => {
                 "unexpected-character-in-attribute-name"
             }
-            ParserError::UnexpectedCharacterInUnquotedAttributeValue => {
+            Self::UnexpectedCharacterInUnquotedAttributeValue => {
                 "unexpected-character-in-unquoted-attribute-value"
             }
-            ParserError::UnexpectedEqualsSignBeforeAttributeName => {
+            Self::UnexpectedEqualsSignBeforeAttributeName => {
                 "unexpected-equals-sign-before-attribute-name"
             }
-            ParserError::UnexpectedNullCharacter => "unexpected-null-character",
-            ParserError::UnexpectedQuestionMarkInsteadOfTagName => {
+            Self::UnexpectedNullCharacter => "unexpected-null-character",
+            Self::UnexpectedQuestionMarkInsteadOfTagName => {
                 "unexpected-question-mark-instead-of-tag-name"
             }
-            ParserError::UnexpectedSolidusInTag => "unexpected-solidus-in-tag",
-            ParserError::UnknownNamedCharacterReference => "unknown-named-character-reference",
-            ParserError::AbruptClosingOfEmptyComment => "abrupt-closing-of-empty-comment",
+            Self::UnexpectedSolidusInTag => "unexpected-solidus-in-tag",
+            Self::UnknownNamedCharacterReference => "unknown-named-character-reference",
+            Self::AbruptClosingOfEmptyComment => "abrupt-closing-of-empty-comment",
 
-            ParserError::ExpectedDocTypeButGotChars => "expected-doctype-but-got-chars",
-            ParserError::ExpectedDocTypeButGotStartTag => "expected-doctype-but-got-start-tag",
-            ParserError::ExpectedDocTypeButGotEndTag => "expected-doctype-but-got-end-tag",
+            Self::ExpectedDocTypeButGotChars => "expected-doctype-but-got-chars",
+            Self::ExpectedDocTypeButGotStartTag => "expected-doctype-but-got-start-tag",
+            Self::ExpectedDocTypeButGotEndTag => "expected-doctype-but-got-end-tag",
         }
     }
 }
@@ -173,6 +174,7 @@ impl ErrorLogger {
     }
 
     /// Returns a cloned instance of the errors
+    #[must_use]
     pub fn get_errors(&self) -> Vec<ParseError> {
         self.errors.clone()
     }

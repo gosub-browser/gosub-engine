@@ -7,7 +7,7 @@ pub const CHAR_LF: char = '\u{000A}';
 pub const CHAR_CR: char = '\u{000D}';
 
 /// Encoding defines the way the buffer stream is read, as what defines a "character".
-#[derive(PartialEq)]
+#[derive(PartialEq, Eq)]
 pub enum Encoding {
     /// Stream is of UTF8 characters
     UTF8,
@@ -24,9 +24,9 @@ pub enum Confidence {
     Certain,
 }
 
-/// This struct defines a position in the stream. POsition itself is 0-based, but line and col are
-/// 1-based and are calculated from the line_offsets vector.
-#[derive(Clone, Copy, Debug, PartialEq)]
+/// This struct defines a position in the stream. `POsition` itself is 0-based, but line and col are
+/// 1-based and are calculated from the `line_offsets` vector.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct Position {
     /// Offset in the stream
     pub offset: usize,
@@ -53,7 +53,7 @@ impl fmt::Display for Position {
 /// Defines a single character/element in the stream. This is either a UTF8 character, or
 /// a surrogate characters since these cannot be stored in a single char.
 /// Eof is denoted as a separate element.
-#[derive(Clone, Copy, Debug, PartialEq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Bytes {
     /// Standard UTF character
     Ch(char),
@@ -63,7 +63,7 @@ pub enum Bytes {
     Eof,
 }
 
-use Bytes::*;
+use Bytes::{Ch, Eof};
 
 /// Converts the given character to a char. This is only valid for UTF8 characters. Surrogate
 /// and EOF characters are converted to 0x0000
@@ -71,7 +71,7 @@ impl From<Bytes> for char {
     fn from(c: Bytes) -> Self {
         match c {
             Ch(c) => c,
-            Bytes::Surrogate(..) | Eof => 0x0000 as char,
+            Bytes::Surrogate(..) | Eof => 0x0000 as Self,
         }
     }
 }
@@ -80,17 +80,19 @@ impl fmt::Display for Bytes {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Ch(ch) => write!(f, "{ch}"),
-            Bytes::Surrogate(surrogate) => write!(f, "U+{surrogate:04X}"),
+            Self::Surrogate(surrogate) => write!(f, "U+{surrogate:04X}"),
             Eof => write!(f, "EOF"),
         }
     }
 }
 
 impl Bytes {
+    #[must_use]
     pub fn is_whitespace(&self) -> bool {
         matches!(self, Self::Ch(c) if c.is_whitespace())
     }
 
+    #[must_use]
     pub fn is_numeric(&self) -> bool {
         matches!(self, Self::Ch(c) if c.is_numeric())
     }
@@ -112,7 +114,7 @@ pub struct CharIterator {
     buffer: Vec<Bytes>,
     /// Reference to the actual buffer stream in u8 bytes
     u8_buffer: Vec<u8>,
-    /// If all things are ok, both buffer and u8_buffer should refer to the same memory location (?)
+    /// If all things are ok, both buffer and `u8_buffer` should refer to the same memory location (?)
     pub has_read_eof: bool, // True when we just read an EOF
 }
 
@@ -169,6 +171,7 @@ impl CharIterator {
         }
     }
     /// Returns true when the encoding encountered is defined as certain
+    #[must_use]
     pub fn is_certain_encoding(&self) -> bool {
         self.confidence == Confidence::Certain
     }
@@ -188,6 +191,7 @@ impl CharIterator {
     }
 
     /// Returns true when the stream pointer is at the end of the stream
+    #[must_use]
     pub fn eof(&self) -> bool {
         self.has_read_eof || self.position.offset >= self.length
     }
@@ -226,6 +230,7 @@ impl CharIterator {
     }
 
     /// Returns the current offset in the stream
+    #[must_use]
     pub fn tell(&self) -> usize {
         self.position.offset
     }
@@ -245,7 +250,7 @@ impl CharIterator {
         self.force_set_encoding(e);
     }
 
-    /// Sets the encoding for this stream, and decodes the u8_buffer into the buffer with the
+    /// Sets the encoding for this stream, and decodes the `u8_buffer` into the buffer with the
     /// correct encoding.
     pub fn force_set_encoding(&mut self, e: Encoding) {
         match e {
@@ -405,6 +410,7 @@ impl CharIterator {
 
     /// Looks ahead in the stream, can use an optional index if we want to seek further
     /// (or back) in the stream.
+    #[must_use]
     pub fn look_ahead(&self, offset: usize) -> Bytes {
         // Trying to look after the stream
         if self.position.offset + offset >= self.length {

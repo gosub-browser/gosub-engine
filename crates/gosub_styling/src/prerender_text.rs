@@ -303,7 +303,7 @@ impl PrerenderText {
                 pen_x += advance;
 
                 Some(Glyph {
-                    id: gid.to_u16() as u32,
+                    id: u32::from(gid.to_u16()),
                     x,
                     y: 0.0,
                 })

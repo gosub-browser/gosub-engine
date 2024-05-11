@@ -1,3 +1,4 @@
+#![allow(clippy::unwrap_used, clippy::expect_used)]
 use anyhow::{anyhow, bail, Result};
 use gosub_css3::location::Location;
 use gosub_css3::parser_config::ParserConfig;
@@ -68,7 +69,7 @@ fn main() -> Result<()> {
     };
 
     if tokens {
-        print_tokens(css);
+        print_tokens(&css);
         return Ok(());
     }
 
@@ -100,7 +101,7 @@ fn main() -> Result<()> {
 }
 
 fn display_snippet(css: &str, err: Error) {
-    let loc = err.location.clone();
+    let loc = err.location;
     let lines: Vec<&str> = css.split('\n').collect();
     let line_nr = loc.line() - 1;
     let col_nr = if loc.column() < 2 {
@@ -139,15 +140,15 @@ fn display_snippet(css: &str, err: Error) {
     println!();
 }
 
-fn print_tokens(css: String) {
+fn print_tokens(css: &str) {
     let mut it = ByteStream::new();
-    it.read_from_str(&css, Some(Encoding::UTF8));
+    it.read_from_str(css, Some(Encoding::UTF8));
     it.close();
 
     let mut tokenizer = Tokenizer::new(&mut it, Location::default());
     loop {
         let token = tokenizer.consume();
-        println!("{:?}", token);
+        println!("{token:?}");
 
         if token.token_type == TokenType::Eof {
             break;

@@ -1,3 +1,4 @@
+use anyhow::anyhow;
 #[cfg(not(target_arch = "wasm32"))]
 use {
     cookie::CookieJar,
@@ -61,12 +62,12 @@ impl Debug for FetchResponse {
 fn fetch_url(
     method: &str,
     url: &str,
-    headers: Headers,
+    headers: &Headers,
     cookies: CookieJar,
 ) -> Result<FetchResponse> {
     let mut http_req = Request::new(method, url, "HTTP/1.1");
     http_req.headers = headers.clone();
-    http_req.cookies = cookies.clone();
+    http_req.cookies = cookies;
 
     let parts = Url::parse(url)?;
 
@@ -80,18 +81,28 @@ fn fetch_url(
 
     // For now, we do a DNS lookup here. We don't use this information yet, but it allows us to
     // measure the DNS lookup time.
-    let t_id = timing_start!("dns.lookup", parts.host_str().unwrap());
+    let t_id = timing_start!(
+        "dns.lookup",
+        parts
+            .host_str()
+            .ok_or(anyhow!("Failed to get host string"))?
+    );
 
     let mut resolver = Dns::new();
     let Some(hostname) = parts.host_str() else {
-        return Err(Error::Generic(format!("invalid hostname: {}", url)).into());
+        return Err(Error::Generic(format!("invalid hostname: {url}")).into());
     };
     let _ = resolver.resolve(hostname, ResolveType::Ipv4)?;
 
     timing_stop!(t_id);
 
     // Fetch the HTML document from the site
-    let t_id = timing_start!("http.transfer", parts.host_str().unwrap());
+    let t_id = timing_start!(
+        "http.transfer",
+        parts
+            .host_str()
+            .ok_or(anyhow!("Failed to get host string"))?
+    );
 
     let agent = ureq::agent();
     let mut req = agent.request(method, url).set("User-Agent", USER_AGENT);
@@ -114,18 +125,18 @@ fn fetch_url(
             //     fetch_response.response.cookies.insert(cookie.name().to_string(), cookie.value().to_string());
             // }
 
-            let len = if let Some(header) = resp.header("Content-Length") {
-                header.parse::<usize>().unwrap_or_default()
-            } else {
-                MAX_BYTES as usize
-            };
+            let len = resp
+                .header("Content-Length")
+                .map_or(MAX_BYTES as usize, |header| {
+                    header.parse::<usize>().unwrap_or_default()
+                });
 
             let mut bytes: Vec<u8> = Vec::with_capacity(len);
             resp.into_reader().take(MAX_BYTES).read_to_end(&mut bytes)?;
             fetch_response.response.body = bytes;
         }
         Err(e) => {
-            return Err(Error::Generic(format!("Failed to fetch URL: {}", e)).into());
+            return Err(Error::Generic(format!("Failed to fetch URL: {e}")).into());
         }
     }
     timing_stop!(t_id);
@@ -144,11 +155,14 @@ fn fetch_url(
             fetch_response.parse_errors = parse_errors;
         }
         Err(e) => {
-            return Err(Error::Generic(format!("Failed to parse HTML: {}", e)).into());
+            return Err(Error::Generic(format!("Failed to parse HTML: {e}")).into());
         }
     }
 
     timing_stop!(t_id);
+
+
+    panic!("HELLI");
 
     Ok(fetch_response)
 }
@@ -165,7 +179,7 @@ mod tests {
         headers.set("User-Agent", USER_AGENT);
         let cookies = CookieJar::new();
 
-        let resp = fetch_url("GET", url, headers, cookies);
-        assert!(resp.is_ok());
+        let resp = fetch_url("GET", url, &headers, cookies);
+        resp.unwrap();
     }
 }
