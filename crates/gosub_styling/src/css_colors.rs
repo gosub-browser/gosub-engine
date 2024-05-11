@@ -29,15 +29,16 @@ pub struct RgbColor {
 
 impl RgbColor {
     /// Create a new color with r,g,b and alpha values
+    #[must_use]
     pub fn new(r: f32, g: f32, b: f32, a: f32) -> Self {
-        RgbColor { r, g, b, a }
+        Self { r, g, b, a }
     }
 }
 
 impl Default for RgbColor {
     fn default() -> Self {
         // Default full alpha (solid) with black color
-        RgbColor {
+        Self {
             r: 0.0,
             g: 0.0,
             b: 0.0,
@@ -49,7 +50,7 @@ impl Default for RgbColor {
 impl From<&str> for RgbColor {
     fn from(value: &str) -> Self {
         if value.is_empty() {
-            return RgbColor::default();
+            return Self::default();
         }
         if value.starts_with('#') {
             return parse_hex(value);
@@ -58,19 +59,19 @@ impl From<&str> for RgbColor {
             // Rgb function
             let rgb = Rgb::from_str(value);
             if rgb.is_err() {
-                return RgbColor::default();
+                return Self::default();
             }
             let rgb = rgb.unwrap();
-            return RgbColor::new(rgb.get_red(), rgb.get_green(), rgb.get_blue(), 255.0);
+            return Self::new(rgb.get_red(), rgb.get_green(), rgb.get_blue(), 255.0);
         }
         if value.starts_with("rgba(") {
             // Rgba function
             let rgb = Rgb::from_str(value);
             if rgb.is_err() {
-                return RgbColor::default();
+                return Self::default();
             }
             let rgb = rgb.unwrap();
-            return RgbColor::new(
+            return Self::new(
                 rgb.get_red(),
                 rgb.get_green(),
                 rgb.get_blue(),
@@ -80,19 +81,19 @@ impl From<&str> for RgbColor {
         if value.starts_with("hsl(") {
             let hsl = Hsl::from_str(value);
             if hsl.is_err() {
-                return RgbColor::default();
+                return Self::default();
             }
             let rgb: Rgb = hsl.unwrap().to_rgb();
-            return RgbColor::new(rgb.get_red(), rgb.get_green(), rgb.get_blue(), 255.0);
+            return Self::new(rgb.get_red(), rgb.get_green(), rgb.get_blue(), 255.0);
         }
         if value.starts_with("hsla(") {
             // HSLA function
             let hsl = Hsl::from_str(value);
             if hsl.is_err() {
-                return RgbColor::default();
+                return Self::default();
             }
             let rgb: Rgb = hsl.unwrap().to_rgb();
-            return RgbColor::new(
+            return Self::new(
                 rgb.get_red(),
                 rgb.get_green(),
                 rgb.get_blue(),
@@ -100,12 +101,12 @@ impl From<&str> for RgbColor {
             );
         }
 
-        return get_hex_color_from_name(value).map_or(RgbColor::default(), parse_hex);
+        return get_hex_color_from_name(value).map_or(Self::default(), parse_hex);
     }
 }
 
 fn get_hex_color_from_name(color_name: &str) -> Option<&str> {
-    for entry in crate::css_colors::CSS_COLORNAMES.iter() {
+    for entry in *crate::css_colors::CSS_COLORNAMES {
         if entry.name == color_name {
             return Some(entry.value);
         }

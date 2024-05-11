@@ -1,3 +1,4 @@
+#![allow(clippy::unwrap_used, clippy::expect_used)]
 use gosub_testing::testing::tree_construction::fixture::read_fixtures;
 use gosub_testing::testing::tree_construction::result::ResultStatus;
 use gosub_testing::testing::tree_construction::Harness;
@@ -28,13 +29,13 @@ fn main() {
 
     for fixture_file in fixtures {
         println!(
-            "🏃‍♂️ Running {} tests from 🗄️ {:?}",
+            "\u{1f3c3}\u{200d}\u{2642}\u{fe0f} Running {} tests from \u{1f5c4}\u{fe0f} {:?}",
             fixture_file.tests.len(),
             fixture_file.path
         );
 
         let mut test_idx = 1;
-        for test in fixture_file.tests {
+        for test in &fixture_file.tests {
             if test_idx == 10 {
                 run_test(test_idx, test, &mut results);
             }
@@ -43,7 +44,7 @@ fn main() {
 
         println!(
             "\
-    🏁 Tests completed: Ran {} tests, {} assertions, {} succeeded, {} failed ({} position failures)\n",
+    \u{1f3c1} Tests completed: Ran {} tests, {} assertions, {} succeeded, {} failed ({} position failures)\n",
             results.tests,
             results.assertions,
             results.succeeded,
@@ -53,7 +54,7 @@ fn main() {
     }
 
     if results.failed > 0 {
-        println!("❌ Failed tests:");
+        println!("\u{274c} Failed tests:");
         for (test_idx, line, data) in results.tests_failed {
             println!("  * Test #{test_idx} at line {line}:");
             println!("    {data}");
@@ -61,7 +62,7 @@ fn main() {
     }
 }
 
-fn run_test(test_idx: usize, test: Test, all_results: &mut TotalTestResults) {
+fn run_test(test_idx: usize, test: &Test, all_results: &mut TotalTestResults) {
     #[cfg(feature = "debug_parser_verbose")]
     println!(
         "🧪 Running test #{test_idx}: {}:{}",

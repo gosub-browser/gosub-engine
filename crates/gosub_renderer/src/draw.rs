@@ -63,7 +63,7 @@ impl TreeDrawer {
         };
 
         if let Err(e) = self.taffy.compute_layout(self.root, space) {
-            eprintln!("Failed to compute layout: {:?}", e);
+            eprintln!("Failed to compute layout: {e:?}");
             return;
         }
 
@@ -71,7 +71,7 @@ impl TreeDrawer {
 
         self.position = PositionTree::from_taffy(&self.taffy, self.root);
 
-        let bg = Rect::new(0.0, 0.0, size.width as f64, size.height as f64);
+        let bg = Rect::new(0.0, 0.0, f64::from(size.width), f64::from(size.height));
         scene.fill(Fill::NonZero, Affine::IDENTITY, Color::BLACK, None, &bg);
 
         self.render_node_with_children(self.root, scene, (0.0, 0.0));
@@ -80,7 +80,7 @@ impl TreeDrawer {
     fn render_node_with_children(&mut self, id: NodeID, scene: &mut Scene, mut pos: (f64, f64)) {
         let err = self.render_node(id, scene, &mut pos);
         if let Err(e) = err {
-            eprintln!("Error rendering node: {:?}", e);
+            eprintln!("Error rendering node: {e:?}");
         }
 
         let children = match self.taffy.children(id) {
@@ -114,8 +114,8 @@ impl TreeDrawer {
             .get_node_mut(gosub_id)
             .ok_or(anyhow!("Node not found"))?;
 
-        pos.0 += layout.location.x as f64;
-        pos.1 += layout.location.y as f64;
+        pos.0 += f64::from(layout.location.x);
+        pos.1 += f64::from(layout.location.y);
 
         let border_radius = render_bg(node, scene, layout, pos, &self.url);
 
@@ -153,8 +153,7 @@ impl TreeDrawer {
                 let fit = element
                     .attributes
                     .get("object-fit")
-                    .map(|prop| prop.as_str())
-                    .unwrap_or("contain");
+                    .map_or("contain", std::string::String::as_str);
 
                 render_image(&img, scene, *pos, layout.size, border_radius, fit)?;
             }
@@ -182,10 +181,9 @@ fn render_text(node: &mut RenderTreeNode, scene: &mut Scene, pos: &(f64, f64), l
                     _ => None,
                 }
             })
-            .map(|color| Color::rgba8(color.r as u8, color.g as u8, color.b as u8, color.a as u8))
-            .unwrap_or(Color::BLACK);
+            .map_or(Color::BLACK, |color| Color::rgba8(color.r as u8, color.g as u8, color.b as u8, color.a as u8));
 
-        let affine = Affine::translate((pos.0, pos.1 + layout.size.height as f64));
+        let affine = Affine::translate((pos.0, pos.1 + f64::from(layout.size.height)));
 
         text.show(scene, color, affine, Fill::NonZero, None);
     }
@@ -215,38 +213,34 @@ fn render_bg(
     let border_radius_left = node
         .properties
         .get("border-radius-left")
-        .map(|prop| {
+        .map_or(0.0, |prop| {
             prop.compute_value();
-            prop.actual.unit_to_px() as f64
-        })
-        .unwrap_or(0.0);
+            f64::from(prop.actual.unit_to_px())
+        });
 
     let border_radius_right = node
         .properties
         .get("border-radius-right")
-        .map(|prop| {
+        .map_or(0.0, |prop| {
             prop.compute_value();
-            prop.actual.unit_to_px() as f64
-        })
-        .unwrap_or(0.0);
+            f64::from(prop.actual.unit_to_px())
+        });
 
     let border_radius_top = node
         .properties
         .get("border-radius-top")
-        .map(|prop| {
+        .map_or(0.0, |prop| {
             prop.compute_value();
-            prop.actual.unit_to_px() as f64
-        })
-        .unwrap_or(0.0);
+            f64::from(prop.actual.unit_to_px())
+        });
 
     let border_radius_bottom = node
         .properties
         .get("border-radius-bottom")
-        .map(|prop| {
+        .map_or(0.0, |prop| {
             prop.compute_value();
-            prop.actual.unit_to_px() as f64
-        })
-        .unwrap_or(0.0);
+            f64::from(prop.actual.unit_to_px())
+        });
 
     let border_radius = (
         border_radius_top,
@@ -258,8 +252,8 @@ fn render_bg(
     let rect = RoundedRect::new(
         pos.0,
         pos.1,
-        pos.0 + layout.size.width as f64,
-        pos.1 + layout.size.height as f64,
+        pos.0 + f64::from(layout.size.width),
+        pos.1 + f64::from(layout.size.height),
         border_radius,
     );
 
@@ -306,7 +300,7 @@ fn render_bg(
         );
 
         let _ = render_image(&img, scene, *pos, layout.size, border_radius, "fill").map_err(|e| {
-            eprintln!("Error rendering image: {:?}", e);
+            eprintln!("Error rendering image: {e:?}");
         });
     }
 
@@ -321,16 +315,16 @@ enum Side {
 }
 
 impl Side {
-    fn all() -> [Side; 4] {
-        [Side::Top, Side::Right, Side::Bottom, Side::Left]
+    fn all() -> [Self; 4] {
+        [Self::Top, Self::Right, Self::Bottom, Self::Left]
     }
 
     fn to_str(&self) -> &'static str {
         match self {
-            Side::Top => "top",
-            Side::Right => "right",
-            Side::Bottom => "bottom",
-            Side::Left => "left",
+            Self::Top => "top",
+            Self::Right => "right",
+            Self::Bottom => "bottom",
+            Self::Left => "left",
         }
     }
 }
@@ -361,12 +355,12 @@ fn render_border_side(
     border_radius: f64,
     side: Side,
 ) {
-    let border_width = match side {
+    let border_width = f64::from(match side {
         Side::Top => layout.border.top,
         Side::Right => layout.border.right,
         Side::Bottom => layout.border.bottom,
         Side::Left => layout.border.left,
-    } as f64;
+    });
 
     let border_color = node
         .properties
@@ -384,8 +378,8 @@ fn render_border_side(
 
     // let border_radius = 16f64;
 
-    let width = layout.size.width as f64;
-    let height = layout.size.height as f64;
+    let width = f64::from(layout.size.width);
+    let height = f64::from(layout.size.height);
 
     if let Some(border_color) = border_color {
         let mut path = BezPath::new();
@@ -583,37 +577,37 @@ fn render_image(
     radii: (f64, f64, f64, f64),
     fit: &str,
 ) -> anyhow::Result<()> {
-    let width = size.width as f64;
-    let height = size.height as f64;
+    let width = f64::from(size.width);
+    let height = f64::from(size.height);
 
     let rect = RoundedRect::new(pos.0, pos.1, pos.0 + width, pos.1 + height, radii);
 
     let affine = match fit {
         "fill" => {
-            let scale_x = width / img.width as f64;
-            let scale_y = height / img.height as f64;
+            let scale_x = width / f64::from(img.width);
+            let scale_y = height / f64::from(img.height);
 
             Affine::scale_non_uniform(scale_x, scale_y)
         }
         "contain" => {
-            let scale_x = width / img.width as f64;
-            let scale_y = height / img.height as f64;
+            let scale_x = width / f64::from(img.width);
+            let scale_y = height / f64::from(img.height);
 
             let scale = scale_x.min(scale_y);
 
             Affine::scale_non_uniform(scale, scale)
         }
         "cover" => {
-            let scale_x = width / img.width as f64;
-            let scale_y = height / img.height as f64;
+            let scale_x = width / f64::from(img.width);
+            let scale_y = height / f64::from(img.height);
 
             let scale = scale_x.max(scale_y);
 
             Affine::scale_non_uniform(scale, scale)
         }
         "scale-down" => {
-            let scale_x = width / img.width as f64;
-            let scale_y = height / img.height as f64;
+            let scale_x = width / f64::from(img.width);
+            let scale_y = height / f64::from(img.height);
 
             let scale = scale_x.min(scale_y);
             let scale = scale.min(1.0);
@@ -625,12 +619,12 @@ fn render_image(
 
     let affine = affine.with_translation(pos.into());
 
-    println!("affine: {:?}", affine);
-    println!("fit: {:?}", fit);
-    println!("width: {:?}", width);
-    println!("height: {:?}", height);
+    println!("affine: {affine:?}");
+    println!("fit: {fit:?}");
+    println!("width: {width:?}");
+    println!("height: {height:?}");
     println!("img size: {}x{}", img.width, img.height);
-    println!("rect: {:?}", rect);
+    println!("rect: {rect:?}");
 
     scene.fill(Fill::NonZero, Affine::IDENTITY, img, Some(affine), &rect);
 
@@ -702,8 +696,8 @@ pub fn print_tree(tree: &TaffyTree<GosubId>, root: NodeId, gosub_tree: &RenderTr
             RenderNodeData::Element(element) => {
                 node_render.push('<');
                 node_render.push_str(&element.name);
-                for (key, value) in element.attributes.iter() {
-                    node_render.push_str(&format!(" {}=\"{}\"", key, value));
+                for (key, value) in &element.attributes {
+                    node_render.push_str(&format!(" {key}=\"{value}\""));
                 }
                 node_render.push('>');
             }

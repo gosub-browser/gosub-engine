@@ -8,7 +8,7 @@ pub struct Attribute {
 }
 
 /// The different token structures that can be emitted by the tokenizer
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub enum Token {
     DocType {
         name: Option<String>,
@@ -34,7 +34,7 @@ impl Token {
     /// Returns true when there is a mixture of white and non-white and \0 characters in the token
     pub(crate) fn is_mixed(&self) -> bool {
         // Check if there are white characters AND non-white characters in the token
-        if let Token::Text(value) = self {
+        if let Self::Text(value) = self {
             let mut found = 0;
 
             if value.chars().any(|ch| ch.is_ascii_whitespace()) {
@@ -58,7 +58,7 @@ impl Token {
     /// Returns true when there is a mixture of \0 and non-\0 characters in the token
     pub(crate) fn is_mixed_null(&self) -> bool {
         // Check if there are white characters AND non-white characters in the token
-        if let Token::Text(value) = self {
+        if let Self::Text(value) = self {
             value.chars().any(|ch| ch == '\0') && value.chars().any(|ch| ch != '\0')
         } else {
             false
@@ -68,8 +68,9 @@ impl Token {
 
 impl Token {
     /// Returns true when any of the characters in the token are null
+    #[must_use]
     pub fn is_null(&self) -> bool {
-        if let Token::Text(value) = self {
+        if let Self::Text(value) = self {
             value.chars().any(|ch| ch == CHAR_NUL)
         } else {
             false
@@ -77,13 +78,15 @@ impl Token {
     }
 
     /// Returns true when the token is an EOF token
+    #[must_use]
     pub fn is_eof(&self) -> bool {
-        matches!(self, Token::Eof)
+        matches!(self, Self::Eof)
     }
 
     /// Returns true if the text token is empty or only contains whitespace
+    #[must_use]
     pub fn is_empty_or_white(&self) -> bool {
-        if let Token::Text(value) = self {
+        if let Self::Text(value) = self {
             if value.is_empty() {
                 return true;
             }
@@ -95,7 +98,7 @@ impl Token {
     }
 
     pub(crate) fn is_start_tag(&self, wanted_name: &str) -> bool {
-        if let Token::StartTag { name, .. } = self {
+        if let Self::StartTag { name, .. } = self {
             name == wanted_name
         } else {
             false
@@ -103,11 +106,11 @@ impl Token {
     }
 
     pub(crate) fn is_any_start_tag(&self) -> bool {
-        matches!(self, Token::StartTag { .. })
+        matches!(self, Self::StartTag { .. })
     }
 
     pub(crate) fn is_text_token(&self) -> bool {
-        matches!(self, Token::Text(..))
+        matches!(self, Self::Text(..))
     }
 }
 
@@ -115,7 +118,7 @@ impl Token {
 impl std::fmt::Display for Token {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         match self {
-            Token::DocType {
+            Self::DocType {
                 name,
                 pub_identifier,
                 sys_identifier,
@@ -131,9 +134,9 @@ impl std::fmt::Display for Token {
                 result.push_str(" />");
                 write!(f, "{result}")
             }
-            Token::Comment(value) => write!(f, "<!-- {value} -->"),
-            Token::Text(value) => write!(f, "{value}"),
-            Token::StartTag {
+            Self::Comment(value) => write!(f, "<!-- {value} -->"),
+            Self::Text(value) => write!(f, "{value}"),
+            Self::StartTag {
                 name,
                 is_self_closing,
                 attributes,
@@ -148,12 +151,12 @@ impl std::fmt::Display for Token {
                 result.push('>');
                 write!(f, "{result}")
             }
-            Token::EndTag {
+            Self::EndTag {
                 name,
                 is_self_closing,
                 ..
             } => write!(f, "</{}{}>", name, if *is_self_closing { "/" } else { "" }),
-            Token::Eof => write!(f, "EOF"),
+            Self::Eof => write!(f, "EOF"),
         }
     }
 }

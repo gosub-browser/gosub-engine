@@ -38,12 +38,12 @@ impl TokenizerBuilder {
                 initial_state: self.state,
                 last_start_tag: self.last_start_tag.clone().unwrap_or_default(),
             }),
-            error_logger.clone(),
+            error_logger,
         )
     }
 }
 
-#[derive(Default, Debug, Clone, PartialEq, Deserialize)]
+#[derive(Default, Debug, Clone, PartialEq, Eq, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct TokenError {
     pub code: String,
@@ -51,7 +51,7 @@ pub struct TokenError {
     pub col: usize,
 }
 
-#[derive(Default, Debug, Clone, PartialEq, Deserialize)]
+#[derive(Default, Debug, Clone, PartialEq, Eq, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct TestSpec {
     pub description: String,
@@ -175,6 +175,7 @@ where
 }
 
 impl TestSpec {
+    #[must_use]
     pub fn builders(&self) -> Vec<TokenizerBuilder> {
         let mut builders = vec![];
 
@@ -333,6 +334,7 @@ pub enum FixtureFile {
     },
 }
 
+#[must_use]
 pub fn from_utf16_lossy(input: &str) -> String {
     // TODO: Maybe use String::from_utf8_lossy(input.as_bytes()).into() instead
     // https://doc.rust-lang.org/std/string/struct.String.html#method.from_utf8_lossy
@@ -346,7 +348,7 @@ pub fn from_utf16_lossy(input: &str) -> String {
         // There are UTF-16 characters that the following will not decode into UTF-8, so we might
         // be dropping characters when a DecodeUtf16Error error is encountered.
         std::char::decode_utf16([n])
-            .filter_map(|r| r.ok())
+            .filter_map(std::result::Result::ok)
             .collect::<String>()
     })
     .to_string()

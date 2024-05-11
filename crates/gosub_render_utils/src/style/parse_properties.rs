@@ -10,7 +10,7 @@ use crate::style::parse::{
     parse_len, parse_len_auto, parse_tracking_sizing_function,
 };
 
-pub(crate) fn parse_display(node: &mut RenderTreeNode) -> Display {
+pub fn parse_display(node: &mut RenderTreeNode) -> Display {
     let Some(display) = node.get_property("display") else {
         return Display::Block;
     };
@@ -30,7 +30,7 @@ pub(crate) fn parse_display(node: &mut RenderTreeNode) -> Display {
     }
 }
 
-pub(crate) fn parse_overflow(node: &mut RenderTreeNode) -> Point<Overflow> {
+pub fn parse_overflow(node: &mut RenderTreeNode) -> Point<Overflow> {
     fn parse(str: &str) -> Overflow {
         match str {
             "visible" => Overflow::Visible,
@@ -66,7 +66,7 @@ pub(crate) fn parse_overflow(node: &mut RenderTreeNode) -> Point<Overflow> {
     overflow
 }
 
-pub(crate) fn parse_position(node: &mut RenderTreeNode) -> Position {
+pub fn parse_position(node: &mut RenderTreeNode) -> Position {
     let Some(position) = node.get_property("position") else {
         return Position::Relative;
     };
@@ -84,7 +84,7 @@ pub(crate) fn parse_position(node: &mut RenderTreeNode) -> Position {
     }
 }
 
-pub(crate) fn parse_inset(node: &mut RenderTreeNode) -> Rect<LengthPercentageAuto> {
+pub fn parse_inset(node: &mut RenderTreeNode) -> Rect<LengthPercentageAuto> {
     Rect {
         top: parse_len_auto(node, "inset-top"),
         right: parse_len_auto(node, "inset-right"),
@@ -93,28 +93,28 @@ pub(crate) fn parse_inset(node: &mut RenderTreeNode) -> Rect<LengthPercentageAut
     }
 }
 
-pub(crate) fn parse_size(node: &mut RenderTreeNode) -> Size<Dimension> {
+pub fn parse_size(node: &mut RenderTreeNode) -> Size<Dimension> {
     Size {
         width: parse_dimension(node, "width"),
         height: parse_dimension(node, "height"),
     }
 }
 
-pub(crate) fn parse_min_size(node: &mut RenderTreeNode) -> Size<Dimension> {
+pub fn parse_min_size(node: &mut RenderTreeNode) -> Size<Dimension> {
     Size {
         width: parse_dimension(node, "min-width"),
         height: parse_dimension(node, "min-height"),
     }
 }
 
-pub(crate) fn parse_max_size(node: &mut RenderTreeNode) -> Size<Dimension> {
+pub fn parse_max_size(node: &mut RenderTreeNode) -> Size<Dimension> {
     Size {
         width: parse_dimension(node, "max-width"),
         height: parse_dimension(node, "max-height"),
     }
 }
 
-pub(crate) fn parse_aspect_ratio(node: &mut RenderTreeNode) -> Option<f32> {
+pub fn parse_aspect_ratio(node: &mut RenderTreeNode) -> Option<f32> {
     let aspect_ratio = node.get_property("aspect-ratio")?;
 
     aspect_ratio.compute_value();
@@ -150,7 +150,7 @@ pub(crate) fn parse_aspect_ratio(node: &mut RenderTreeNode) -> Option<f32> {
     }
 }
 
-pub(crate) fn parse_margin(node: &mut RenderTreeNode) -> Rect<LengthPercentageAuto> {
+pub fn parse_margin(node: &mut RenderTreeNode) -> Rect<LengthPercentageAuto> {
     Rect {
         top: parse_len_auto(node, "margin-top"),
         right: parse_len_auto(node, "margin-right"),
@@ -159,7 +159,7 @@ pub(crate) fn parse_margin(node: &mut RenderTreeNode) -> Rect<LengthPercentageAu
     }
 }
 
-pub(crate) fn parse_padding(node: &mut RenderTreeNode) -> Rect<LengthPercentage> {
+pub fn parse_padding(node: &mut RenderTreeNode) -> Rect<LengthPercentage> {
     Rect {
         top: parse_len(node, "padding-top"),
         right: parse_len(node, "padding-right"),
@@ -168,7 +168,7 @@ pub(crate) fn parse_padding(node: &mut RenderTreeNode) -> Rect<LengthPercentage>
     }
 }
 
-pub(crate) fn parse_border(node: &mut RenderTreeNode) -> Rect<LengthPercentage> {
+pub fn parse_border(node: &mut RenderTreeNode) -> Rect<LengthPercentage> {
     Rect {
         top: parse_len(node, "border-top-width"),
         right: parse_len(node, "border-right-width"),
@@ -177,7 +177,7 @@ pub(crate) fn parse_border(node: &mut RenderTreeNode) -> Rect<LengthPercentage> 
     }
 }
 
-pub(crate) fn parse_align_items(node: &mut RenderTreeNode) -> Option<AlignItems> {
+pub fn parse_align_items(node: &mut RenderTreeNode) -> Option<AlignItems> {
     let display = node.get_property("align-items")?;
 
     display.compute_value();
@@ -198,34 +198,34 @@ pub(crate) fn parse_align_items(node: &mut RenderTreeNode) -> Option<AlignItems>
     }
 }
 
-pub(crate) fn parse_align_self(node: &mut RenderTreeNode) -> Option<AlignSelf> {
+pub fn parse_align_self(node: &mut RenderTreeNode) -> Option<AlignSelf> {
     parse_align_i(node, "align-self")
 }
 
-pub(crate) fn parse_justify_items(node: &mut RenderTreeNode) -> Option<AlignItems> {
+pub fn parse_justify_items(node: &mut RenderTreeNode) -> Option<AlignItems> {
     parse_align_i(node, "justify-items")
 }
 
-pub(crate) fn parse_justify_self(node: &mut RenderTreeNode) -> Option<AlignSelf> {
+pub fn parse_justify_self(node: &mut RenderTreeNode) -> Option<AlignSelf> {
     parse_align_i(node, "justify-self")
 }
 
-pub(crate) fn parse_align_content(node: &mut RenderTreeNode) -> Option<AlignContent> {
+pub fn parse_align_content(node: &mut RenderTreeNode) -> Option<AlignContent> {
     parse_align_c(node, "align-content")
 }
 
-pub(crate) fn parse_justify_content(node: &mut RenderTreeNode) -> Option<JustifyContent> {
+pub fn parse_justify_content(node: &mut RenderTreeNode) -> Option<JustifyContent> {
     parse_align_c(node, "justify-content")
 }
 
-pub(crate) fn parse_gap(node: &mut RenderTreeNode) -> Size<LengthPercentage> {
+pub fn parse_gap(node: &mut RenderTreeNode) -> Size<LengthPercentage> {
     Size {
         width: parse_len(node, "column-gap"),
         height: parse_len(node, "row-gap"),
     }
 }
 
-pub(crate) fn parse_flex_direction(node: &mut RenderTreeNode) -> FlexDirection {
+pub fn parse_flex_direction(node: &mut RenderTreeNode) -> FlexDirection {
     let Some(property) = node.get_property("flex-direction") else {
         return FlexDirection::Row;
     };
@@ -244,7 +244,7 @@ pub(crate) fn parse_flex_direction(node: &mut RenderTreeNode) -> FlexDirection {
     }
 }
 
-pub(crate) fn parse_flex_wrap(node: &mut RenderTreeNode) -> FlexWrap {
+pub fn parse_flex_wrap(node: &mut RenderTreeNode) -> FlexWrap {
     let Some(property) = node.get_property("flex-wrap") else {
         return FlexWrap::NoWrap;
     };
@@ -262,11 +262,11 @@ pub(crate) fn parse_flex_wrap(node: &mut RenderTreeNode) -> FlexWrap {
     }
 }
 
-pub(crate) fn parse_flex_basis(node: &mut RenderTreeNode) -> Dimension {
+pub fn parse_flex_basis(node: &mut RenderTreeNode) -> Dimension {
     parse_dimension(node, "flex-basis")
 }
 
-pub(crate) fn parse_flex_grow(node: &mut RenderTreeNode) -> f32 {
+pub fn parse_flex_grow(node: &mut RenderTreeNode) -> f32 {
     let Some(property) = node.get_property("flex-grow") else {
         return 0.0;
     };
@@ -279,7 +279,7 @@ pub(crate) fn parse_flex_grow(node: &mut RenderTreeNode) -> f32 {
     }
 }
 
-pub(crate) fn parse_flex_shrink(node: &mut RenderTreeNode) -> f32 {
+pub fn parse_flex_shrink(node: &mut RenderTreeNode) -> f32 {
     let Some(property) = node.get_property("flex-shrink") else {
         return 1.0;
     };
@@ -292,27 +292,27 @@ pub(crate) fn parse_flex_shrink(node: &mut RenderTreeNode) -> f32 {
     }
 }
 
-pub(crate) fn parse_grid_template_rows(node: &mut RenderTreeNode) -> Vec<TrackSizingFunction> {
+pub fn parse_grid_template_rows(node: &mut RenderTreeNode) -> Vec<TrackSizingFunction> {
     parse_tracking_sizing_function(node, "grid-template-rows")
 }
 
-pub(crate) fn parse_grid_template_columns(node: &mut RenderTreeNode) -> Vec<TrackSizingFunction> {
+pub fn parse_grid_template_columns(node: &mut RenderTreeNode) -> Vec<TrackSizingFunction> {
     parse_tracking_sizing_function(node, "grid-template-columns")
 }
 
-pub(crate) fn parse_grid_auto_rows(
+pub fn parse_grid_auto_rows(
     node: &mut RenderTreeNode,
 ) -> Vec<NonRepeatedTrackSizingFunction> {
     parse_grid_auto(node, "grid-auto-rows")
 }
 
-pub(crate) fn parse_grid_auto_columns(
+pub fn parse_grid_auto_columns(
     node: &mut RenderTreeNode,
 ) -> Vec<NonRepeatedTrackSizingFunction> {
     parse_grid_auto(node, "grid-auto-columns")
 }
 
-pub(crate) fn parse_grid_auto_flow(node: &mut RenderTreeNode) -> GridAutoFlow {
+pub fn parse_grid_auto_flow(node: &mut RenderTreeNode) -> GridAutoFlow {
     let Some(property) = node.get_property("grid-auto-flow") else {
         return GridAutoFlow::Row;
     };
@@ -331,14 +331,14 @@ pub(crate) fn parse_grid_auto_flow(node: &mut RenderTreeNode) -> GridAutoFlow {
     }
 }
 
-pub(crate) fn parse_grid_row(node: &mut RenderTreeNode) -> Line<GridPlacement> {
+pub fn parse_grid_row(node: &mut RenderTreeNode) -> Line<GridPlacement> {
     Line {
         start: parse_grid_placement(node, "grid-row-start"),
         end: parse_grid_placement(node, "grid-row-end"),
     }
 }
 
-pub(crate) fn parse_grid_column(node: &mut RenderTreeNode) -> Line<GridPlacement> {
+pub fn parse_grid_column(node: &mut RenderTreeNode) -> Line<GridPlacement> {
     Line {
         start: parse_grid_placement(node, "grid-column-start"),
         end: parse_grid_placement(node, "grid-column-end"),

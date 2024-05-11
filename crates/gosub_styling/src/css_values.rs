@@ -70,23 +70,23 @@ fn match_selector_part(
                     .as_element()
                     .attributes
                     .get("id")
-                    .unwrap_or(&"".to_string())
+                    .unwrap_or(&String::new())
                     != &part.value
                 {
                     return false;
                 }
             }
             CssSelectorType::Attribute => {
-                let wanted_attr_name = part.name.clone();
+                let wanted_attr_name = part.name;
 
                 if !current_node.has_attribute(&wanted_attr_name) {
                     return false;
                 }
 
-                let mut wanted_attr_value = part.value.clone();
+                let mut wanted_attr_value = part.value;
                 let mut got_attr_value = current_node
                     .get_attribute(&wanted_attr_name)
-                    .unwrap_or(&"".to_string())
+                    .unwrap_or(&String::new())
                     .to_string();
 
                 // If we need to match case-insensitive, just convert everything to lowercase for comparison
@@ -113,7 +113,7 @@ fn match_selector_part(
                     MatcherType::DashMatch => {
                         // Exact value or value followed by a hyphen
                         got_attr_value == wanted_attr_value
-                            || got_attr_value.starts_with(&format!("{}-", wanted_attr_value))
+                            || got_attr_value.starts_with(&format!("{wanted_attr_value}-"))
                     }
                     MatcherType::PrefixMatch => {
                         // Starts with
@@ -278,6 +278,7 @@ pub struct CssProperty {
 }
 
 impl CssProperty {
+    #[must_use]
     pub fn new(prop_name: &str) -> Self {
         Self {
             name: prop_name.to_string(),
@@ -375,8 +376,7 @@ impl CssProperty {
         crate::property_list::PROPERTY_TABLE
             .iter()
             .find(|entry| entry.name == self.name)
-            .map(|entry| entry.inheritable)
-            .unwrap_or(false)
+            .is_some_and(|entry| entry.inheritable)
     }
 
     // Returns the initial value for the property, if any
@@ -402,6 +402,7 @@ impl Default for CssProperties {
 }
 
 impl CssProperties {
+    #[must_use]
     pub fn new() -> Self {
         Self {
             properties: HashMap::new(),
@@ -428,41 +429,43 @@ pub enum CssValue {
 impl Display for CssValue {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            CssValue::None => write!(f, "none"),
-            CssValue::Color(col) => {
+            Self::None => write!(f, "none"),
+            Self::Color(col) => {
                 write!(
                     f,
                     "#{:02x}{:02x}{:02x}{:02x}",
                     col.r as u8, col.g as u8, col.b as u8, col.a as u8
                 )
             }
-            CssValue::Number(num) => write!(f, "{}", num),
-            CssValue::Percentage(p) => write!(f, "{}%", p),
-            CssValue::String(s) => write!(f, "{}", s),
-            CssValue::Unit(val, unit) => write!(f, "{}{}", val, unit),
+            Self::Number(num) => write!(f, "{num}"),
+            Self::Percentage(p) => write!(f, "{p}%"),
+            Self::String(s) => write!(f, "{s}"),
+            Self::Unit(val, unit) => write!(f, "{val}{unit}"),
         }
     }
 }
 
 impl CssValue {
+    #[must_use]
     pub fn to_color(&self) -> Option<RgbColor> {
         match self {
-            CssValue::Color(col) => Some(*col),
-            CssValue::String(s) => Some(RgbColor::from(s.as_str())),
+            Self::Color(col) => Some(*col),
+            Self::String(s) => Some(RgbColor::from(s.as_str())),
             _ => None,
         }
     }
 
+    #[must_use]
     pub fn unit_to_px(&self) -> f32 {
         //TODO: Implement the rest of the units
         match self {
-            CssValue::Unit(val, unit) => match unit.as_str() {
+            Self::Unit(val, unit) => match unit.as_str() {
                 "px" => *val,
                 "em" => *val * 16.0,
                 "rem" => *val * 16.0,
                 _ => *val,
             },
-            CssValue::String(value) => {
+            Self::String(value) => {
                 if value.ends_with("px") {
                     value.trim_end_matches("px").parse::<f32>().unwrap_or(0.0)
                 } else if value.ends_with("rem") {
@@ -488,42 +491,42 @@ mod tests {
             value: CssValue::String("red".into()),
             origin: CssOrigin::Author,
             important: false,
-            location: "".into(),
+            location: String::new(),
             specificity: Specificity::new(1, 0, 0),
         };
         let b = DeclarationProperty {
             value: CssValue::String("blue".into()),
             origin: CssOrigin::UserAgent,
             important: false,
-            location: "".into(),
+            location: String::new(),
             specificity: Specificity::new(1, 0, 0),
         };
         let c = DeclarationProperty {
             value: CssValue::String("green".into()),
             origin: CssOrigin::User,
             important: false,
-            location: "".into(),
+            location: String::new(),
             specificity: Specificity::new(1, 0, 0),
         };
         let d = DeclarationProperty {
             value: CssValue::String("yellow".into()),
             origin: CssOrigin::Author,
             important: true,
-            location: "".into(),
+            location: String::new(),
             specificity: Specificity::new(1, 0, 0),
         };
         let e = DeclarationProperty {
             value: CssValue::String("orange".into()),
             origin: CssOrigin::UserAgent,
             important: true,
-            location: "".into(),
+            location: String::new(),
             specificity: Specificity::new(1, 0, 0),
         };
         let f = DeclarationProperty {
             value: CssValue::String("purple".into()),
             origin: CssOrigin::User,
             important: true,
-            location: "".into(),
+            location: String::new(),
             specificity: Specificity::new(1, 0, 0),
         };
 

@@ -1,3 +1,4 @@
+#![allow(clippy::unwrap_used, clippy::expect_used)]
 use std::fs;
 
 use anyhow::bail;
@@ -71,7 +72,7 @@ fn load_html_rendertree(str_url: &str) -> Result<StyleTree> {
 
     println!("stylesheets: {:?}", doc.stylesheets.len());
 
-    for stylesheet in doc.stylesheets.iter() {
+    for stylesheet in &doc.stylesheets {
         println!("stylesheet: {:?}", stylesheet.location);
     }
 

@@ -20,3 +20,8 @@ vello = "0.1.0"
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 rust-fontconfig = "0.1.7"
+
+
+
+[lints]
+workspace = true

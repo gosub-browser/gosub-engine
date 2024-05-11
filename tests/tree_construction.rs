@@ -1,3 +1,4 @@
+#![allow(clippy::unwrap_used, clippy::expect_used)]
 use gosub_testing::testing::tree_construction::fixture::{
     fixture_root_path, read_fixture_from_path,
 };

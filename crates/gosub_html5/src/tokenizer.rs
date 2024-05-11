@@ -128,7 +128,7 @@ impl<'stream> Tokenizer<'stream> {
         self.chars.position
     }
 
-    /// Retrieves the next token from the input stream or Token::EOF when the end is reached
+    /// Retrieves the next token from the input stream or `Token::EOF` when the end is reached
     pub fn next_token(&mut self, parser_data: ParserData) -> Result<Token> {
         self.consume_stream(parser_data)?;
 
@@ -140,6 +140,7 @@ impl<'stream> Tokenizer<'stream> {
     }
 
     /// Returns the error logger
+    #[must_use]
     pub fn get_error_logger(&self) -> Ref<ErrorLogger> {
         self.error_logger.borrow()
     }
@@ -346,7 +347,7 @@ impl<'stream> Tokenizer<'stream> {
                 }
                 State::RCDATALessThanSign => {
                     let c = self.read_char();
-                    if let Ch('/') = c {
+                    if c == Ch('/') {
                         self.temporary_buffer.clear();
                         self.state = State::RCDATAEndTagOpen;
                     } else {
@@ -435,7 +436,7 @@ impl<'stream> Tokenizer<'stream> {
                 }
                 State::RAWTEXTLessThanSign => {
                     let c = self.read_char();
-                    if let Ch('/') = c {
+                    if c == Ch('/') {
                         self.temporary_buffer.clear();
                         self.state = State::RAWTEXTEndTagOpen;
                     } else {
@@ -621,7 +622,7 @@ impl<'stream> Tokenizer<'stream> {
                 }
                 State::ScriptDataEscapeStart => {
                     let c = self.read_char();
-                    if let Ch('-') = c {
+                    if c == Ch('-') {
                         self.consume('-');
                         self.state = State::ScriptDataEscapeStartDash;
                     } else {
@@ -631,7 +632,7 @@ impl<'stream> Tokenizer<'stream> {
                 }
                 State::ScriptDataEscapeStartDash => {
                     let c = self.read_char();
-                    if let Ch('-') = c {
+                    if c == Ch('-') {
                         self.consume('-');
                         self.state = State::ScriptDataEscapedDashDash;
                     } else {
@@ -918,7 +919,7 @@ impl<'stream> Tokenizer<'stream> {
                 }
                 State::ScriptDataDoubleEscapedLessThanSign => {
                     let c = self.read_char();
-                    if let Ch('/') = c {
+                    if c == Ch('/') {
                         self.temporary_buffer.clear();
                         self.consume('/');
                         self.state = State::ScriptDataDoubleEscapeEnd;
@@ -1314,7 +1315,7 @@ impl<'stream> Tokenizer<'stream> {
                 }
                 State::CommentLessThanSignBang => {
                     let c = self.read_char();
-                    if let Ch('-') = c {
+                    if c == Ch('-') {
                         self.state = State::CommentLessThanSignBangDash;
                     } else {
                         self.chars.unread();
@@ -1323,7 +1324,7 @@ impl<'stream> Tokenizer<'stream> {
                 }
                 State::CommentLessThanSignBangDash => {
                     let c = self.read_char();
-                    if let Ch('-') = c {
+                    if c == Ch('-') {
                         self.state = State::CommentLessThanSignBangDashDash;
                     } else {
                         self.chars.unread();
@@ -1939,7 +1940,7 @@ impl<'stream> Tokenizer<'stream> {
                 }
                 State::CDATASectionBracket => {
                     let c = self.read_char();
-                    if let Ch(']') = c {
+                    if c == Ch(']') {
                         self.state = State::CDATASectionEnd;
                     } else {
                         self.consume(']');
@@ -2066,7 +2067,7 @@ impl<'stream> Tokenizer<'stream> {
         if self.has_consumed_data() {
             let value = self.get_consumed_str().to_string();
 
-            self.token_queue.push(Token::Text(value.to_string()));
+            self.token_queue.push(Token::Text(value));
 
             self.clear_consume_buffer();
         }
@@ -2096,18 +2097,20 @@ impl<'stream> Tokenizer<'stream> {
         self.consumed.push_str(s);
     }
 
-    /// Return true when the given end_token matches the stored start token (ie: 'table' matches when
-    /// last_start_token = 'table')
+    /// Return true when the given `end_token` matches the stored start token (ie: 'table' matches when
+    /// `last_start_token` = 'table')
     fn is_appropriate_end_token(&self, end_token: &str) -> bool {
         self.last_start_token == end_token
     }
 
     /// Return the consumed string as a String
+    #[must_use]
     pub fn get_consumed_str(&self) -> &str {
         &self.consumed
     }
 
     /// Returns true if there is anything in the consume buffer
+    #[must_use]
     pub fn has_consumed_data(&self) -> bool {
         !self.consumed.is_empty()
     }
@@ -2127,7 +2130,7 @@ impl<'stream> Tokenizer<'stream> {
             .add_error(pos, message.as_str());
     }
 
-    /// Set is_closing_tag in current token
+    /// Set `is_closing_tag` in current token
     fn set_is_closing_in_current_token(&mut self, is_closing: bool) {
         match &mut self.current_token.as_mut().unwrap() {
             Token::EndTag { .. } => {
@@ -2142,7 +2145,7 @@ impl<'stream> Tokenizer<'stream> {
         }
     }
 
-    /// Set force_quirk mode in current token
+    /// Set `force_quirk` mode in current token
     fn set_quirks_mode(&mut self, quirky: bool) {
         if let Token::DocType { force_quirks, .. } = &mut self.current_token.as_mut().unwrap() {
             *force_quirks = quirky;
@@ -2177,12 +2180,12 @@ impl<'stream> Tokenizer<'stream> {
         Ok(())
     }
 
-    /// This function checks to see if there is already an attribute name like the one in current_attr_name.
+    /// This function checks to see if there is already an attribute name like the one in `current_attr_name`.
     fn attr_already_exists(&mut self) -> bool {
         self.current_attrs.contains_key(&self.current_attr_name)
     }
 
-    /// Saves the current attribute name and value onto the current_attrs stack, if there is anything to store
+    /// Saves the current attribute name and value onto the `current_attrs` stack, if there is anything to store
     fn store_and_clear_current_attribute(&mut self) {
         if !self.current_attr_name.is_empty()
             && !self.current_attrs.contains_key(&self.current_attr_name)

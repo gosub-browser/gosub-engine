@@ -21,6 +21,7 @@ pub struct TreeDrawer {
 }
 
 impl TreeDrawer {
+    #[must_use]
     pub fn new(style: StyleTree, taffy: TaffyTree<GosubID>, root: TaffyID, url: Url) -> Self {
         let position = PositionTree::from_taffy(&taffy, root);
         Self {

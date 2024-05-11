@@ -1,3 +1,4 @@
+#![allow(clippy::unwrap_used, clippy::expect_used)]
 use std::fs;
 
 use anyhow::{bail, Result};
@@ -21,9 +22,9 @@ struct TextVisitor {
 }
 
 impl TextVisitor {
-    fn new() -> Self {
+    const fn new() -> Self {
         Self {
-            color: String::from(""),
+            color: String::new(),
         }
     }
 }
@@ -45,15 +46,15 @@ impl TreeVisitor<RenderTreeNode> for TextVisitor {
         let s = &data.value;
 
         if !self.color.is_empty() {
-            print!("\x1b[{}", self.color)
+            print!("\x1b[{}", self.color);
         }
 
         if !s.is_empty() {
-            print!("{}", s)
+            print!("{s}");
         }
 
         if !self.color.is_empty() {
-            print!("\x1b[0m")
+            print!("\x1b[0m");
         }
     }
 
@@ -66,13 +67,13 @@ impl TreeVisitor<RenderTreeNode> for TextVisitor {
     fn element_enter(&mut self, tree: &RenderTree, node: &RenderTreeNode, data: &ElementData) {
         if let Some(mut prop) = tree.get_property(node.id, "color") {
             if let Some(col) = prop.compute_value().to_color() {
-                self.color = format!("\x1b[38;2;{};{};{}m", col.r, col.g, col.b)
+                self.color = format!("\x1b[38;2;{};{};{}m", col.r, col.g, col.b);
             }
         }
 
         if let Some(mut prop) = tree.get_property(node.id, "background-color") {
             if let Some(col) = prop.compute_value().to_color() {
-                print!("\x1b[48;2;{};{};{}m", col.r, col.g, col.b)
+                print!("\x1b[48;2;{};{};{}m", col.r, col.g, col.b);
             }
         }
 
@@ -82,13 +83,13 @@ impl TreeVisitor<RenderTreeNode> for TextVisitor {
     fn element_leave(&mut self, tree: &RenderTree, node: &RenderTreeNode, data: &ElementData) {
         if let Some(mut prop) = tree.get_property(node.id, "color") {
             if let Some(col) = prop.compute_value().to_color() {
-                self.color = format!("\x1b[38;2;{};{};{}m", col.r, col.g, col.b)
+                self.color = format!("\x1b[38;2;{};{};{}m", col.r, col.g, col.b);
             }
         }
 
         if let Some(mut prop) = tree.get_property(node.id, "background-color") {
             if let Some(col) = prop.compute_value().to_color() {
-                print!("\x1b[48;2;{};{};{}m", col.r, col.g, col.b)
+                print!("\x1b[48;2;{};{};{}m", col.r, col.g, col.b);
             }
         }
 

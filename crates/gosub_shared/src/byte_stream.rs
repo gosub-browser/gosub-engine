@@ -5,7 +5,7 @@ pub const CHAR_LF: char = '\u{000A}';
 pub const CHAR_CR: char = '\u{000D}';
 
 /// Encoding defines the way the buffer stream is read, as what defines a "character".
-#[derive(PartialEq)]
+#[derive(PartialEq, Eq)]
 pub enum Encoding {
     /// Stream is of UTF8 characters
     UTF8,
@@ -14,7 +14,7 @@ pub enum Encoding {
 }
 
 /// The confidence decides how confident we are that the input stream is of this encoding
-#[derive(PartialEq)]
+#[derive(PartialEq, Eq)]
 pub enum Confidence {
     /// This encoding might be the one we need
     Tentative,
@@ -26,7 +26,7 @@ pub enum Confidence {
 /// a surrogate characters since these cannot be stored in a single char.
 /// Eof is denoted as a separate element, so is Empty to indicate that the buffer is empty but
 /// not yet closed.
-#[derive(Clone, Copy, Debug, PartialEq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Character {
     /// Standard UTF character
     Ch(char),
@@ -38,7 +38,7 @@ pub enum Character {
     StreamEmpty,
 }
 
-use Character::*;
+use Character::{Ch, StreamEmpty, StreamEnd, Surrogate};
 
 /// Converts the given character to a char. This is only valid for UTF8 characters. Surrogate
 /// and EOF characters are converted to 0x0000
@@ -46,8 +46,8 @@ impl From<Character> for char {
     fn from(c: Character) -> Self {
         match c {
             Ch(c) => c,
-            Surrogate(..) => 0x0000 as char,
-            StreamEmpty | StreamEnd => 0x0000 as char,
+            Surrogate(..) => 0x0000 as Self,
+            StreamEmpty | StreamEnd => 0x0000 as Self,
         }
     }
 }
@@ -64,9 +64,11 @@ impl fmt::Display for Character {
 }
 
 impl Character {
+    #[must_use]
     pub fn is_whitespace(&self) -> bool {
         matches!(self, Self::Ch(c) if c.is_whitespace())
     }
+    #[must_use]
     pub fn is_numeric(&self) -> bool {
         matches!(self, Self::Ch(c) if c.is_numeric())
     }
@@ -113,7 +115,7 @@ pub trait Stream {
     fn closed(&self) -> bool;
     /// Returns true when the stream is empty (but still open)
     fn exhausted(&self) -> bool;
-    /// REturns true when the stream is closed and empty
+    /// `REturns` true when the stream is closed and empty
     fn eof(&self) -> bool;
     /// Returns the current offset in the stream
     fn offset(&self) -> usize;
@@ -332,6 +334,7 @@ impl ByteStream {
 
 impl ByteStream {
     /// Returns true when the encoding encountered is defined as certain
+    #[must_use]
     pub fn is_certain_encoding(&self) -> bool {
         self.confidence == Confidence::Certain
     }
@@ -356,7 +359,7 @@ impl ByteStream {
         self.force_set_encoding(e);
     }
 
-    /// Sets the encoding for this stream, and decodes the u8_buffer into the buffer with the
+    /// Sets the encoding for this stream, and decodes the `u8_buffer` into the buffer with the
     /// correct encoding.
     ///
     /// @TODO: I think we should not set an encoding and completely convert a stream. Instead,
