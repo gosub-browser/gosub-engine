@@ -3,6 +3,8 @@ use std::io::Read;
 use std::iter::Iterator;
 use std::{fmt, io};
 
+use Bytes::{Ch, Eof};
+
 pub const CHAR_LF: char = '\u{000A}';
 pub const CHAR_CR: char = '\u{000D}';
 
@@ -39,7 +41,7 @@ pub struct Position {
 impl Position {
     /// Create a new position
     #[must_use]
-    pub fn new(offset: usize, line: usize, col: usize) -> Self {
+    pub const fn new(offset: usize, line: usize, col: usize) -> Self {
         Self { offset, line, col }
     }
 }
@@ -62,8 +64,6 @@ pub enum Bytes {
     /// End of stream
     Eof,
 }
-
-use Bytes::{Ch, Eof};
 
 /// Converts the given character to a char. This is only valid for UTF8 characters. Surrogate
 /// and EOF characters are converted to 0x0000
@@ -192,7 +192,7 @@ impl CharIterator {
 
     /// Returns true when the stream pointer is at the end of the stream
     #[must_use]
-    pub fn eof(&self) -> bool {
+    pub const fn eof(&self) -> bool {
         self.has_read_eof || self.position.offset >= self.length
     }
 
@@ -205,10 +205,11 @@ impl CharIterator {
 
     /// Skip offset characters in the stream (based on chars)
     pub fn skip(&mut self, offset: usize) {
-        let mut skip_len = offset;
-        if self.position.offset + offset >= self.length {
-            skip_len = self.length - self.position.offset;
-        }
+        let skip_len = if self.position.offset + offset >= self.length {
+            self.length - self.position.offset
+        } else {
+            offset
+        };
 
         for _ in 0..skip_len {
             self.read_char();
@@ -231,7 +232,7 @@ impl CharIterator {
 
     /// Returns the current offset in the stream
     #[must_use]
-    pub fn tell(&self) -> usize {
+    pub const fn tell(&self) -> usize {
         self.position.offset
     }
 
@@ -287,7 +288,7 @@ impl CharIterator {
             }
             Encoding::ASCII => {
                 // Convert the string into characters so we can use easy indexing. Any non-ascii chars (> 0x7F) are converted to '?'
-                self.buffer = self.normalize_newlines_and_ascii(&self.u8_buffer);
+                self.buffer = Self::normalize_newlines_and_ascii(&self.u8_buffer);
                 self.length = self.buffer.len();
             }
         }
@@ -296,7 +297,7 @@ impl CharIterator {
     }
 
     /// Normalizes newlines (CRLF/CR => LF) and converts high ascii to '?'
-    fn normalize_newlines_and_ascii(&self, buffer: &[u8]) -> Vec<Bytes> {
+    fn normalize_newlines_and_ascii(buffer: &[u8]) -> Vec<Bytes> {
         let mut result = Vec::with_capacity(buffer.len());
 
         for i in 0..buffer.len() {
@@ -329,7 +330,7 @@ impl CharIterator {
     /// Populates the current buffer with the contents of given file f
     pub fn read_from_file(&mut self, mut f: impl Read, e: Option<Encoding>) -> io::Result<()> {
         // First we read the u8 bytes into a buffer
-        f.read_to_end(&mut self.u8_buffer).expect("uh oh");
+        f.read_to_end(&mut self.u8_buffer)?;
         self.force_set_encoding(e.unwrap_or(Encoding::UTF8));
         self.reset();
         Ok(())
@@ -344,7 +345,7 @@ impl CharIterator {
 
     /// Returns the number of characters left in the buffer
     #[cfg(test)]
-    fn chars_left(&self) -> usize {
+    const fn chars_left(&self) -> usize {
         self.length - self.position.offset
     }
 

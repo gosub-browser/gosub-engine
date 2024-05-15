@@ -91,9 +91,8 @@ impl Css3<'_> {
                                 self.parse_until_rule_end();
                                 if self.config.ignore_errors {
                                     continue;
-                                } else {
-                                    return rule;
                                 }
+                                return rule;
                             }
                             children.push(rule.unwrap());
                         } else {
@@ -102,9 +101,8 @@ impl Css3<'_> {
                                 self.parse_until_rule_end();
                                 if self.config.ignore_errors {
                                     continue;
-                                } else {
-                                    return declaration;
                                 }
+                                return declaration;
                             }
 
                             children.push(declaration.unwrap());
@@ -130,9 +128,8 @@ impl Css3<'_> {
                             self.parse_until_rule_end();
                             if self.config.ignore_errors {
                                 continue;
-                            } else {
-                                return rule;
                             }
+                            return rule;
                         }
                         children.push(rule.unwrap());
 

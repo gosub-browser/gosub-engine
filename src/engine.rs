@@ -1,4 +1,5 @@
 use anyhow::anyhow;
+
 #[cfg(not(target_arch = "wasm32"))]
 use {
     cookie::CookieJar,
@@ -10,7 +11,7 @@ use {
         http::{headers::Headers, request::Request, response::Response},
     },
     gosub_shared::bytes::{CharIterator, Confidence, Encoding},
-    gosub_shared::types::{Error, ParseError, Result},
+    gosub_shared::types::{GosubError, ParseError, Result},
     gosub_shared::{timing_start, timing_stop},
     std::io::Read,
     url::Url,
@@ -90,7 +91,7 @@ fn fetch_url(
 
     let mut resolver = Dns::new();
     let Some(hostname) = parts.host_str() else {
-        return Err(Error::Generic(format!("invalid hostname: {url}")).into());
+        return Err(GosubError::Generic(format!("invalid hostname: {url}")).into());
     };
     let _ = resolver.resolve(hostname, ResolveType::Ipv4)?;
 
@@ -136,7 +137,7 @@ fn fetch_url(
             fetch_response.response.body = bytes;
         }
         Err(e) => {
-            return Err(Error::Generic(format!("Failed to fetch URL: {e}")).into());
+            return Err(GosubError::Generic(format!("Failed to fetch URL: {e}")).into());
         }
     }
     timing_stop!(t_id);
@@ -155,16 +156,11 @@ fn fetch_url(
             fetch_response.parse_errors = parse_errors;
         }
         Err(e) => {
-            return Err(Error::Generic(format!("Failed to parse HTML: {e}")).into());
+            return Err(GosubError::Generic(format!("Failed to parse HTML: {e}")).into());
         }
     }
 
     timing_stop!(t_id);
-
-
-    panic!("HELLI");
-
-    Ok(fetch_response)
 }
 
 #[cfg(test)]

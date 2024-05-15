@@ -46,8 +46,7 @@ impl From<Character> for char {
     fn from(c: Character) -> Self {
         match c {
             Ch(c) => c,
-            Surrogate(..) => 0x0000 as Self,
-            StreamEmpty | StreamEnd => 0x0000 as Self,
+            Surrogate(..) | StreamEmpty | StreamEnd => 0x0000 as Self,
         }
     }
 }
@@ -273,7 +272,7 @@ impl ByteStream {
     /// Populates the current buffer with the contents of given file f
     pub fn read_from_file(&mut self, mut f: impl Read, e: Option<Encoding>) -> io::Result<()> {
         // First we read the u8 bytes into a buffer
-        f.read_to_end(&mut self.u8_buffer).expect("uh oh");
+        f.read_to_end(&mut self.u8_buffer)?;
         self.close();
         self.force_set_encoding(e.unwrap_or(Encoding::UTF8));
         self.reset_stream();
@@ -294,7 +293,7 @@ impl ByteStream {
     }
 
     /// Normalizes newlines (CRLF/CR => LF) and converts high ascii to '?'
-    fn normalize_newlines_and_ascii(&self, buffer: &[u8]) -> Vec<Character> {
+    fn normalize_newlines_and_ascii(buffer: &[u8]) -> Vec<Character> {
         let mut result = Vec::with_capacity(buffer.len());
 
         for i in 0..buffer.len() {
@@ -399,7 +398,7 @@ impl ByteStream {
             }
             Encoding::ASCII => {
                 // Convert the string into characters so we can use easy indexing. Any non-ascii chars (> 0x7F) are converted to '?'
-                self.buffer = self.normalize_newlines_and_ascii(&self.u8_buffer);
+                self.buffer = Self::normalize_newlines_and_ascii(&self.u8_buffer);
             }
         }
 

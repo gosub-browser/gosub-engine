@@ -1,7 +1,7 @@
 use core::fmt::{Debug, Formatter};
 
 /// Location holds the start position of the given element in the data source
-#[derive(Clone, PartialEq)]
+#[derive(Clone, PartialEq, Eq, Copy)]
 pub struct Location {
     /// Line number, starting with 1
     line: u32,
@@ -35,7 +35,8 @@ impl Default for Location {
 
 impl Location {
     /// Create a new Location
-    pub fn new(line: u32, column: u32, offset: u32) -> Self {
+    #[must_use]
+    pub const fn new(line: u32, column: u32, offset: u32) -> Self {
         Self {
             line,
             column,
@@ -44,17 +45,20 @@ impl Location {
     }
 
     /// Get the line number
-    pub fn line(&self) -> u32 {
+    #[must_use]
+    pub const fn line(&self) -> u32 {
         self.line
     }
 
     /// Get the column number
-    pub fn column(&self) -> u32 {
+    #[must_use]
+    pub const fn column(&self) -> u32 {
         self.column
     }
 
     /// Get the offset
-    pub fn offset(&self) -> u32 {
+    #[must_use]
+    pub const fn offset(&self) -> u32 {
         self.offset
     }
 }
