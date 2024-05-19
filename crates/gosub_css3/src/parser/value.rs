@@ -11,10 +11,7 @@ impl Css3<'_> {
         while !self.tokenizer.eof() {
             let t = self.consume_any()?;
             match t.token_type {
-                TokenType::Comment(_) => {
-                    // eat token
-                }
-                TokenType::Whitespace => {
+                TokenType::Comment(_) | TokenType::Whitespace => {
                     // eat token
                 }
                 _ => {
@@ -26,7 +23,10 @@ impl Css3<'_> {
             if child.is_none() {
                 break;
             }
-            let child = child.unwrap();
+            let child = child.ok_or(Error::new(
+                "Expected value, got none".into(),
+                self.tokenizer.current_location(),
+            ))?;
             children.push(child);
         }
 
@@ -46,7 +46,7 @@ impl Css3<'_> {
             TokenType::IDHash(value) => {
                 let node = Node::new(
                     NodeType::Ident {
-                        value: format!("#{}", value),
+                        value: format!("#{value}"),
                     },
                     t.location,
                 );
@@ -118,32 +118,26 @@ impl Css3<'_> {
                     self.consume_delim('=')?;
                     let t = self.consume_any()?;
                     let node = match t.token_type {
-                        TokenType::QuotedString(default_value) => Node::new(
-                            NodeType::MSIdent {
-                                value: value.to_string(),
-                                default_value,
-                            },
-                            t.location,
-                        ),
-                        TokenType::Number(default_value) => Node::new(
-                            NodeType::MSIdent {
-                                value: value.to_string(),
-                                default_value: default_value.to_string(),
-                            },
-                            t.location,
-                        ),
-                        TokenType::Ident(default_value) => Node::new(
+                        TokenType::QuotedString(default_value)
+                        | TokenType::Ident(default_value) => Node::new(
                             NodeType::MSIdent {
                                 value,
                                 default_value,
                             },
                             t.location,
                         ),
+                        TokenType::Number(default_value) => Node::new(
+                            NodeType::MSIdent {
+                                value,
+                                default_value: default_value.to_string(),
+                            },
+                            t.location,
+                        ),
                         _ => {
                             return Err(Error::new(
-                                format!("Expected number or ident, got {:?}", t),
-                                self.tokenizer.current_location().clone(),
-                            ))
+                                format!("Expected number or ident, got {t:?}"),
+                                self.tokenizer.current_location(),
+                            ));
                         }
                     };
 
@@ -165,8 +159,8 @@ impl Css3<'_> {
                     Ok(Some(node))
                 }
                 '#' => Err(Error::new(
-                    format!("Unexpected token {:?}", t),
-                    self.tokenizer.current_location().clone(),
+                    format!("Unexpected token {t:?}"),
+                    self.tokenizer.current_location(),
                 )),
                 _ => {
                     self.tokenizer.reconsume();
