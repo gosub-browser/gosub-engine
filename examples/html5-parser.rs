@@ -12,5 +12,5 @@ fn main() {
     let _ = Html5Parser::parse_document(&mut chars, Document::clone(&document), None);
 
     // document now contains the html5 node tree
-    println!("Generated tree: \n\n {}", document);
+    println!("Generated tree: \n\n {document}");
 }

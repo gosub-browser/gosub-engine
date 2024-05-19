@@ -8,8 +8,6 @@ use crate::style::get_style_from_node;
 pub fn generate_taffy_tree(rt: &mut RenderTree) -> anyhow::Result<(TaffyTree<GosubID>, NodeId)> {
     let mut tree: TaffyTree<GosubID> = TaffyTree::with_capacity(rt.nodes.len());
 
-    rt.get_root();
-
     let root = add_children_to_tree(rt, &mut tree, rt.root)?;
 
     Ok((tree, root))

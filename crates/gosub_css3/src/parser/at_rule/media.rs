@@ -36,7 +36,7 @@ impl Css3<'_> {
 
         let loc = self.tokenizer.current_location().clone();
 
-        self.consume(TokenType::LParen)?;
+        self.consume(&TokenType::LParen)?;
 
         let mut value: Option<Node> = None;
 
@@ -64,7 +64,7 @@ impl Css3<'_> {
                 TokenType::Function(name) => {
                     let name = name.to_lowercase();
                     let args = self.parse_pseudo_function(name.as_str())?;
-                    self.consume(TokenType::RParen)?;
+                    self.consume(&TokenType::RParen)?;
 
                     Some(Node::new(
                         NodeType::Function {
@@ -85,7 +85,7 @@ impl Css3<'_> {
             self.consume_whitespace_comments();
 
             if !self.tokenizer.eof() {
-                self.consume(TokenType::RParen)?;
+                self.consume(&TokenType::RParen)?;
             }
         }
 

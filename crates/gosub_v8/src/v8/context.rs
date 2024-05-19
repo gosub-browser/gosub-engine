@@ -7,7 +7,7 @@ use v8::{
 
 use gosub_shared::types::Result;
 use gosub_webexecutor::js::{JSCompiled, JSContext, JSError, JSRuntime};
-use gosub_webexecutor::JSError;
+use gosub_webexecutor::ExecutorError;
 
 use crate::{FromContext, V8Compiled, V8Context, V8Engine, V8Object};
 
@@ -81,7 +81,7 @@ impl<'a> V8Ctx<'a> {
 
         let Some(isolate) = NonNull::new(Box::into_raw(isolate)) else {
             return Err(
-                JSError::JS(JSError::Compile("Failed to create isolate".to_owned())).into(),
+                ExecutorError::JS(JSError::Compile("Failed to create isolate".to_owned())).into(),
             );
         };
         v8_ctx.isolate = isolate;
@@ -89,9 +89,10 @@ impl<'a> V8Ctx<'a> {
         let handle_scope = Box::new(HandleScopeType::new(unsafe { v8_ctx.isolate.as_mut() }));
 
         let Some(handle_scope) = NonNull::new(Box::into_raw(handle_scope)) else {
-            return Err(
-                JSError::JS(JSError::Compile("Failed to create handle scope".to_owned())).into(),
-            );
+            return Err(ExecutorError::JS(JSError::Compile(
+                "Failed to create handle scope".to_owned(),
+            ))
+            .into());
         };
 
         v8_ctx.handle_scope = handle_scope;
@@ -105,14 +106,14 @@ impl<'a> V8Ctx<'a> {
 
         let Some(ctx) = NonNull::new(Box::into_raw(Box::new(ctx))) else {
             return Err(
-                JSError::JS(JSError::Compile("Failed to create context".to_owned())).into(),
+                ExecutorError::JS(JSError::Compile("Failed to create context".to_owned())).into(),
             );
         };
 
         v8_ctx.ctx = ctx;
 
         let Some(ctx_scope) = NonNull::new(Box::into_raw(ctx_scope)) else {
-            return Err(JSError::JS(JSError::Compile(
+            return Err(ExecutorError::JS(JSError::Compile(
                 "Failed to create context scope".to_owned(),
             ))
             .into());
@@ -135,7 +136,7 @@ impl<'a> V8Ctx<'a> {
         unsafe { self.ctx.as_mut() }
     }
 
-    pub fn report_exception(try_catch: &mut TryCatch<HandleScope>) -> JSError {
+    pub fn report_exception(try_catch: &mut TryCatch<HandleScope>) -> ExecutorError {
         let mut err = String::new();
 
         if let Some(exception) = try_catch.exception() {
@@ -153,7 +154,7 @@ impl<'a> V8Ctx<'a> {
             };
         }
 
-        JSError::JS(JSError::Exception(err))
+        ExecutorError::JS(JSError::Exception(err))
     }
 
     pub fn handle_stack_trace(ctx: &mut HandleScope, stacktrace: Local<StackTrace>) -> String {
@@ -189,7 +190,7 @@ pub fn ctx_from_scope_isolate<'a>(
     scope: HandleScopeType<'a>,
     ctx: Local<'a, v8::Context>,
     isolate: NonNull<OwnedIsolate>,
-) -> std::result::Result<V8Context<'a>, (HandleScopeType<'a>, JSError)> {
+) -> std::result::Result<V8Context<'a>, (HandleScopeType<'a>, ExecutorError)> {
     let mut v8_ctx = V8Ctx {
         isolate,
         handle_scope: NonNull::dangling(),
@@ -208,7 +209,7 @@ pub fn ctx_from_scope_isolate<'a>(
     let Some(ctx) = NonNull::new(Box::into_raw(ctx)) else {
         return Err((
             scope,
-            JSError::JS(JSError::Compile("Failed to create context".to_owned())),
+            ExecutorError::JS(JSError::Compile("Failed to create context".to_owned())),
         ));
     };
 
@@ -222,7 +223,7 @@ pub fn ctx_from_scope_isolate<'a>(
         let scope = unsafe { Box::from_raw(raw_scope) };
         return Err((
             *scope,
-            JSError::JS(JSError::Compile("Failed to create handle scope".to_owned())),
+            ExecutorError::JS(JSError::Compile("Failed to create handle scope".to_owned())),
         ));
     };
 
@@ -239,7 +240,7 @@ pub fn ctx_from_scope_isolate<'a>(
 
         return Err((
             *scope,
-            JSError::JS(JSError::Compile(
+            ExecutorError::JS(JSError::Compile(
                 "Failed to create context scope".to_owned(),
             )),
         ));
@@ -254,7 +255,7 @@ pub fn ctx_from_scope_isolate<'a>(
 pub fn ctx_from_function_callback_info(
     scope: CallbackScope,
     isolate: NonNull<OwnedIsolate>,
-) -> std::result::Result<V8Context, (HandleScopeType, JSError)> {
+) -> std::result::Result<V8Context, (HandleScopeType, ExecutorError)> {
     let ctx = scope.get_current_context();
     let scope = HandleScopeType::CallbackScope(scope);
 
@@ -264,7 +265,7 @@ pub fn ctx_from_function_callback_info(
 pub fn ctx_from<'a>(
     scope: &'a mut HandleScope,
     isolate: NonNull<OwnedIsolate>,
-) -> std::result::Result<V8Context<'a>, (HandleScopeType<'a>, JSError)> {
+) -> std::result::Result<V8Context<'a>, (HandleScopeType<'a>, ExecutorError)> {
     let ctx = scope.get_current_context();
 
     //SAFETY: This can only shorten the lifetime of the scope, which is fine. (we borrow it for 'a and it is '2, which will always be longer than 'a)
@@ -313,7 +314,9 @@ impl<'a> JSContext for V8Context<'a> {
 
         let try_catch = &mut TryCatch::new(s);
 
-        let code = v8::String::new(try_catch, code).unwrap();
+        let code = v8::String::new(try_catch, code).ok_or(ExecutorError::JS(JSError::Compile(
+            "Failed to create string".to_owned(),
+        )))?;
 
         let script = v8::Script::compile(try_catch, code, None);
 
@@ -334,7 +337,9 @@ impl<'a> JSContext for V8Context<'a> {
     fn new_global_object(&mut self, name: &str) -> Result<<Self::RT as JSRuntime>::Object> {
         let scope = self.scope();
         let obj = Object::new(scope);
-        let name = v8::String::new(scope, name).unwrap();
+        let name = v8::String::new(scope, name).ok_or(ExecutorError::JS(JSError::Compile(
+            "Failed to create string".to_owned(),
+        )))?;
 
         let global = self.borrow_mut().context().global(scope);
 

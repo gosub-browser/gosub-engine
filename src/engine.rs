@@ -161,6 +161,8 @@ fn fetch_url(
     }
 
     timing_stop!(t_id);
+
+    Ok(fetch_response)
 }
 
 #[cfg(test)]
