@@ -1,16 +1,15 @@
-use std::collections::HashMap;
-use std::fmt::Debug;
-
+use crate::css_definitions::get_css_definitions;
+use crate::styling::{match_selector, CssProperties, CssProperty, DeclarationProperty};
+use gosub_css3::stylesheet::{CssDeclaration, CssSelector, CssStylesheet, CssValue};
 use gosub_html5::node::data::element::ElementData;
 use gosub_html5::node::{NodeData, NodeId};
 use gosub_html5::parser::document::{DocumentHandle, TreeIterator};
 use gosub_render_backend::{PreRenderText, RenderBackend, FP};
 use gosub_shared::types::Result;
 use gosub_typeface::DEFAULT_FS;
-
-use crate::css_values::{
-    match_selector, CssProperties, CssProperty, CssValue, DeclarationProperty,
-};
+use log::warn;
+use std::collections::HashMap;
+use std::fmt::Debug;
 
 /// Map of all declared values for all nodes in the document
 #[derive(Default, Debug)]
@@ -153,6 +152,8 @@ impl<B: RenderBackend> RenderTree<B> {
                 .get_node_by_id(current_node_id)
                 .expect("node not found");
 
+            let definitions = get_css_definitions();
+
             for sheet in document.get().stylesheets.iter() {
                 for rule in sheet.rules.iter() {
                     for selector in rule.selectors().iter() {
@@ -166,26 +167,32 @@ impl<B: RenderBackend> RenderTree<B> {
 
                         // Selector matched, so we add all declared values to the map
                         for declaration in rule.declarations().iter() {
-                            let prop_name = declaration.property.clone();
+                            // Step 1: find the property in our CSS definition list
+                            let definition = definitions.find_property(&declaration.property);
+                            // If not found, we skip this declaration
+                            if definition.is_none() {
+                                warn!(
+                                    "Definition is not found for property {:?}",
+                                    declaration.property
+                                );
+                                continue;
+                            }
 
-                            let declaration = DeclarationProperty {
-                                value: CssValue::String(declaration.value.clone()), // @TODO: parse the value into the correct CSSValue
-                                origin: sheet.origin.clone(),
+                            // Check if the declaration matches the definition and return the "expanded" order
+                            if definition.unwrap().matches(&declaration.value).is_none() {
+                                warn!("Declaration does not match definition: {:?}", declaration);
+                                continue;
+                            }
+
+                            // create property for the given values
+                            let property_name = declaration.property.clone();
+                            let decl = CssDeclaration {
+                                property: property_name.to_string(),
+                                value: declaration.value.clone(),
                                 important: declaration.important,
-                                location: sheet.location.clone(),
-                                specificity: selector.specificity(),
                             };
 
-                            if let std::collections::hash_map::Entry::Vacant(e) =
-                                css_map_entry.properties.entry(prop_name.clone())
-                            {
-                                let mut entry = CssProperty::new(prop_name.as_str());
-                                entry.declared.push(declaration);
-                                e.insert(entry);
-                            } else {
-                                let entry = css_map_entry.properties.get_mut(&prop_name).unwrap();
-                                entry.declared.push(declaration);
-                            }
+                            add_property_to_map(&mut css_map_entry, sheet, selector, &decl);
                         }
                     }
                 }
@@ -213,7 +220,7 @@ impl<B: RenderBackend> RenderTree<B> {
                 ControlFlow::Ok(data) => data,
                 ControlFlow::Drop => continue,
                 ControlFlow::Error(e) => {
-                    eprintln!("Failed to create node data for node: {current_node_id:?} ({e}");
+                    log::error!("Failed to create node data for node: {current_node_id:?} ({e}");
                     continue;
                 }
             };
@@ -276,6 +283,52 @@ impl<B: RenderBackend> RenderTree<B> {
         for id in delete_list {
             self.delete_node(&id);
         }
+    }
+}
+
+// Generates a declaration property and adds it to the css_map_entry
+fn add_property_to_map(
+    css_map_entry: &mut CssProperties,
+    sheet: &CssStylesheet,
+    selector: &CssSelector,
+    declaration: &CssDeclaration,
+) {
+    let property_name = declaration.property.clone();
+    let entry = CssProperty::new(property_name.as_str());
+
+    // If the property is a shorthand css property, we need fetch the individual properties
+    // It's possible that need to recurse here as these individual properties can be shorthand as well
+    if entry.is_shorthand() {
+        for property_name in entry.get_props_from_shorthand() {
+            let decl = CssDeclaration {
+                property: property_name.to_string(),
+                value: declaration.value.clone(),
+                important: declaration.important,
+            };
+
+            add_property_to_map(css_map_entry, sheet, selector, &decl);
+        }
+    }
+
+    let declaration = DeclarationProperty {
+        value: declaration.value.clone(),
+        origin: sheet.origin.clone(),
+        important: declaration.important,
+        location: sheet.location.clone(),
+        specificity: selector.specificity(),
+    };
+
+    if let std::collections::hash_map::Entry::Vacant(e) =
+        css_map_entry.properties.entry(property_name.clone())
+    {
+        // Generate new property in the css map
+        let mut entry = CssProperty::new(property_name.as_str());
+        entry.declared.push(declaration);
+        e.insert(entry);
+    } else {
+        // Just add the declaration to the existing property
+        let entry = css_map_entry.properties.get_mut(&property_name).unwrap();
+        entry.declared.push(declaration);
     }
 }
 

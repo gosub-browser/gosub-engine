@@ -2,8 +2,8 @@ use regex::Regex;
 use taffy::prelude::*;
 use taffy::{Overflow, Point};
 
+use gosub_css3::stylesheet::CssValue;
 use gosub_render_backend::RenderBackend;
-use gosub_styling::css_values::CssValue;
 use gosub_styling::render_tree::{RenderNodeData, RenderTreeNode};
 
 use crate::style::parse::{
