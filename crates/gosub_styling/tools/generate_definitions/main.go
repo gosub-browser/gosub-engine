@@ -9,6 +9,7 @@ import (
 	"log"
 	"os"
 	"path"
+	"sort"
 )
 
 type ExportType int
@@ -21,7 +22,7 @@ const (
 
 const (
 	exportType      = Both
-	ResourcePath    = "crates/gosub_styling/resources/definitions"
+	ResourcePath    = ".output"
 	SingleFilePath  = ResourcePath + "/definitions.json"
 	MultiFileDir    = ResourcePath
 	MultiFilePrefix = "definitions_"
@@ -41,7 +42,16 @@ func main() {
 		len(webrefData.Properties), len(webrefData.Values), len(webrefData.AtRules), len(webrefData.Selectors),
 	)
 
+	sort.Slice(webrefData.Properties, func(i, j int) bool {
+		return webrefData.Properties[i].Name < webrefData.Properties[j].Name
+	})
+
 	for _, property := range webrefData.Properties {
+		if property.Syntax == "" {
+			// Skip any empty syntax, as they will be filled later with alias table
+			continue
+		}
+
 		prop := utils.Property{
 			Name:      property.Name,
 			Syntax:    property.Syntax,
@@ -100,6 +110,23 @@ func main() {
 			Descriptors: descriptors,
 			Values:      atRule.Values,
 		})
+
+		for _, property := range webrefData.Properties {
+			if property.Syntax != "" {
+				// Skip properties with syntax
+				continue
+			}
+
+			alias, err := webref.GetAlias(property.Name)
+			if err != nil {
+				log.Panic("failed to get alias syntax for property: " + property.Name)
+			}
+
+			data.PropAliases = append(data.PropAliases, utils.PropAlias{
+				Name: property.Name,
+				For:  alias,
+			})
+		}
 	}
 
 	data.Selectors = webrefData.Selectors
@@ -140,6 +167,7 @@ func ExportMultiFile(data *utils.Data) {
 	ExportData(data.Values, path.Join(MultiFileDir, MultiFilePrefix+"values.json"))
 	ExportData(data.AtRules, path.Join(MultiFileDir, MultiFilePrefix+"at-rules.json"))
 	ExportData(data.Selectors, path.Join(MultiFileDir, MultiFilePrefix+"selectors.json"))
+	ExportData(data.PropAliases, path.Join(MultiFileDir, MultiFilePrefix+"prop-aliases.json"))
 
 }
 
