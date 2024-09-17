@@ -4,15 +4,25 @@ use anyhow::bail;
 use gosub_shared::types::Result;
 use url::{ParseError, Url};
 
-pub struct Fetcher {
+
+pub trait RequestAgent {
+    fn new() -> Self;
+
+    fn get(&self, url: &str) -> Result<Response>;
+
+    fn get_req(&self, req: &Request) -> Result<Response>;
+}
+
+pub struct Fetcher<C: RequestAgent> {
     base_url: Url,
-    client: ureq::Agent,
+    client: C,
 }
 
 impl Fetcher {
     pub fn new(base: Url) -> Self {
         Self {
             base_url: base,
+            #[cfg(not(target_arch = "wasm32"))]
             client: ureq::Agent::new(),
         }
     }
