@@ -1,7 +1,7 @@
-use crate::http::headers::Headers;
 use core::fmt::{Display, Formatter};
 use std::collections::HashMap;
-use std::io::Read;
+
+use crate::http::headers::Headers;
 
 #[derive(Debug)]
 pub struct Response {
@@ -30,8 +30,6 @@ impl Response {
     }
 }
 
-
-
 impl From<Vec<u8>> for Response {
     fn from(body: Vec<u8>) -> Self {
         Self {
@@ -44,8 +42,6 @@ impl From<Vec<u8>> for Response {
         }
     }
 }
-
-
 
 impl Default for Response {
     fn default() -> Self {

@@ -1,11 +1,19 @@
-use super::response::Response;
-use crate::http::request::Request;
+use std::error::Error;
+use std::fmt::Debug;
+
 use anyhow::bail;
-use gosub_shared::types::Result;
 use url::{ParseError, Url};
 
+use gosub_shared::types::Result;
 
-pub trait RequestAgent {
+use crate::http::request::Request;
+use crate::http::request_impl::RequestImpl;
+
+use super::response::Response;
+
+pub trait RequestAgent: Debug {
+    type Error: Error;
+
     fn new() -> Self;
 
     fn get(&self, url: &str) -> Result<Response>;
@@ -13,17 +21,17 @@ pub trait RequestAgent {
     fn get_req(&self, req: &Request) -> Result<Response>;
 }
 
-pub struct Fetcher<C: RequestAgent> {
+#[derive(Debug)]
+pub struct Fetcher {
     base_url: Url,
-    client: C,
+    client: RequestImpl,
 }
 
 impl Fetcher {
     pub fn new(base: Url) -> Self {
         Self {
             base_url: base,
-            #[cfg(not(target_arch = "wasm32"))]
-            client: ureq::Agent::new(),
+            client: RequestImpl::new(),
         }
     }
 
@@ -31,9 +39,7 @@ impl Fetcher {
         let scheme = url.scheme();
 
         let resp = if scheme == "http" || scheme == "https" {
-            let response = self.client.get(url.as_str()).call()?;
-
-            response.try_into()?
+            self.client.get(url.as_str())?
         } else if scheme == "file" {
             let path = &url.as_str()[7..];
 

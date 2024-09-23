@@ -1,22 +1,24 @@
 use ureq::Agent;
+
 use crate::http::fetcher::RequestAgent;
 use crate::http::headers::Headers;
 use crate::http::request::Request;
 use crate::http::response::Response;
 
-struct UreqAgent {
+#[derive(Debug)]
+pub struct UreqAgent {
     agent: Agent,
 }
 
 impl From<Agent> for UreqAgent {
     fn from(value: Agent) -> Self {
-        Self {
-            agent: value,
-        }
+        Self { agent: value }
     }
 }
 
 impl RequestAgent for UreqAgent {
+    type Error = ureq::Error;
+
     fn new() -> Self {
         Agent::new().into()
     }
@@ -30,7 +32,6 @@ impl RequestAgent for UreqAgent {
         todo!()
     }
 }
-
 
 fn get_headers(response: &ureq::Response) -> Headers {
     let names = response.headers_names();

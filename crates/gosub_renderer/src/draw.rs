@@ -189,9 +189,9 @@ where
     where
         P: Html5Parser<C, Document = D>,
     {
-        let rt = load_html_rendertree::<L, P, C>(url.clone())?;
+        let (rt, fetcher) = load_html_rendertree::<L, P, C>(url.clone())?;
 
-        Ok(Self::new(rt, layouter, url, debug))
+        Ok(Self::new(rt, layouter, fetcher, debug))
     }
 
     fn clear_buffers(&mut self) {
