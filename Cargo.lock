@@ -1588,6 +1588,7 @@ dependencies = [
  "gosub_webexecutor",
  "js-sys",
  "lazy_static",
+ "log",
  "nom 7.1.3",
  "nom-trace",
  "regex",
@@ -1775,6 +1776,8 @@ dependencies = [
  "log",
  "slotmap",
  "url",
+ "wasm-bindgen-futures",
+ "web-sys",
  "winit",
 ]
 
@@ -1802,6 +1805,7 @@ dependencies = [
  "gosub_svg",
  "gosub_typeface",
  "image",
+ "log",
  "raw-window-handle",
  "smallvec",
  "vello 0.2.0",

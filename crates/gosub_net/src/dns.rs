@@ -1,15 +1,18 @@
+use core::str::FromStr;
+use std::net::IpAddr;
+use std::time::{SystemTime, UNIX_EPOCH};
+
+use derive_more::Display;
+use log::{debug, info};
+
+use gosub_config::{config, config_store};
+use gosub_shared::types::Result;
+
+use crate::errors::Error;
+
 mod cache;
 mod local;
 mod remote;
-
-use crate::errors::Error;
-use core::str::FromStr;
-use derive_more::Display;
-use gosub_config::config_store;
-use gosub_shared::types::Result;
-use log::{debug, info};
-use std::net::IpAddr;
-use std::time::{SystemTime, UNIX_EPOCH};
 
 /// A DNS entry is a mapping of a domain to zero or more IP address mapping
 #[derive(Clone, Debug, Default, PartialEq)]
@@ -181,9 +184,9 @@ impl Dns {
 
 #[cfg(test)]
 mod test {
-    use super::*;
-    use simple_logger::SimpleLogger;
     use std::time::Instant;
+
+    use simple_logger::SimpleLogger;
 
     #[test]
     fn resolver() {

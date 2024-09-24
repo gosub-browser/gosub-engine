@@ -1,9 +1,10 @@
+use log::info;
 use winit::event::{ElementState, MouseScrollDelta, WindowEvent};
 use winit::event_loop::ActiveEventLoop;
 use winit::keyboard::{KeyCode, PhysicalKey};
 
-use gosub_render_backend::layout::{LayoutTree, Layouter};
-use gosub_render_backend::{Point, RenderBackend, SizeU32, FP};
+use gosub_render_backend::{FP, Point, RenderBackend, SizeU32};
+use gosub_render_backend::layout::{Layouter, LayoutTree};
 use gosub_renderer::draw::SceneDrawer;
 use gosub_shared::traits::css3::CssSystem;
 use gosub_shared::traits::document::Document;
@@ -52,13 +53,24 @@ impl<
                     return Ok(());
                 };
 
-                let redraw = tab.data.draw(backend, &mut self.renderer_data, size);
+                // let redraw = tab.data.draw(backend, &mut self.renderer_data, size);
+                //
+                // backend.render(&mut self.renderer_data, active_window_data)?;
+                //
+                // if redraw {
+                //     self.request_redraw();
+                // }
 
-                backend.render(&mut self.renderer_data, active_window_data)?;
 
-                if redraw {
-                    self.request_redraw();
-                }
+                wasm_bindgen_futures::spawn_local(async {
+                    for _ in 0..10 {
+                        info!("Hello from wasm");
+                    }
+                });
+
+
+
+
             }
 
             WindowEvent::CursorMoved { position, .. } => {

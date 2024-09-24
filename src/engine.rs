@@ -12,8 +12,9 @@ use {
         dns::{Dns, ResolveType},
         http::{headers::Headers, request::Request, response::Response},
     },
-    gosub_shared::types::{Error, ParseError, Result},
     gosub_shared::{timing_start, timing_stop},
+    gosub_shared::byte_stream::{ByteStream, Encoding},
+    gosub_shared::types::{Error, ParseError, Result},
     std::io::Read,
     url::Url,
 };

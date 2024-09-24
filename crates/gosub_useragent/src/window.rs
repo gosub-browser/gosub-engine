@@ -1,24 +1,26 @@
+use std::cell::LazyCell;
+use std::ops::Deref;
+use std::sync::Arc;
+use std::sync::mpsc::Sender;
+
 use anyhow::anyhow;
 use image::imageops::FilterType;
 use log::warn;
-use std::cell::LazyCell;
-use std::ops::Deref;
-use std::sync::mpsc::Sender;
-use std::sync::Arc;
 use url::Url;
 use winit::dpi::LogicalSize;
 use winit::event_loop::ActiveEventLoop;
 use winit::window::{Icon, Window as WinitWindow, WindowId};
 
-use gosub_render_backend::geo::SizeU32;
-use gosub_render_backend::layout::{LayoutTree, Layouter};
 use gosub_render_backend::{NodeDesc, RenderBackend};
+use gosub_render_backend::geo::SizeU32;
+use gosub_render_backend::layout::{Layouter, LayoutTree};
 use gosub_renderer::draw::SceneDrawer;
 use gosub_shared::traits::css3::CssSystem;
 use gosub_shared::traits::document::Document;
 use gosub_shared::traits::html5::Html5Parser;
 use gosub_shared::types::Result;
 
+use crate::application::WindowOptions;
 use crate::tabs::Tabs;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -79,9 +81,31 @@ impl<
         layouter: L,
         default_url: Url,
         debug: bool,
+        opts: WindowOptions,
     ) -> Result<Self> {
         let window = create_window(event_loop)?;
 
+
+        #[cfg(target_arch = "wasm32")]
+        {
+            use winit::platform::web::WindowExtWebSys;
+            let canvas = window.canvas().ok_or(anyhow!("Failed to get canvas"))?;
+            let size = window.inner_size();
+
+
+            canvas.set_id(&opts.id);
+
+            canvas.set_height(size.height);
+            canvas.set_width(size.width);
+
+            web_sys::window()
+                .and_then(|win| win.document())
+                .and_then(|doc| doc.body())
+                .and_then(|body| body.append_child(&canvas).ok())
+                .ok_or(anyhow!("Failed to append canvas to body"))?;
+        }
+
+        
         let renderer_data = backend.create_window_data(window.clone())?;
 
         Ok(Self {
