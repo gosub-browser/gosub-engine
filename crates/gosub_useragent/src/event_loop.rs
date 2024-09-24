@@ -53,24 +53,22 @@ impl<
                     return Ok(());
                 };
 
-                // let redraw = tab.data.draw(backend, &mut self.renderer_data, size);
-                //
-                // backend.render(&mut self.renderer_data, active_window_data)?;
-                //
-                // if redraw {
-                //     self.request_redraw();
-                // }
+                let redraw = tab.data.draw(backend, &mut self.renderer_data, size);
+                
+                backend.render(&mut self.renderer_data, active_window_data)?;
+                
+                if redraw {
+                    self.request_redraw();
+                }
 
+                info!("Redraw requested");
 
+                #[cfg(target_arch = "wasm32")]
                 wasm_bindgen_futures::spawn_local(async {
                     for _ in 0..10 {
                         info!("Hello from wasm");
                     }
                 });
-
-
-
-
             }
 
             WindowEvent::CursorMoved { position, .. } => {

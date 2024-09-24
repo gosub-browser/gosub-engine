@@ -89,6 +89,7 @@ where
                 svg: B::SVGRenderer::new(),
             };
 
+            println!("Rendering tree");
             drawer.render(size);
 
             self.tree_scene = Some(scene);

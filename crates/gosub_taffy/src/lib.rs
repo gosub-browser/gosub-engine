@@ -116,6 +116,9 @@ impl Layouter for TaffyLayouter {
     const COLLAPSE_INLINE: bool = true;
 
     fn layout<LT: LayoutTree<Self>>(&self, tree: &mut LT, root: LT::NodeId, space: SizeU32) -> Result<()> {
+
+        println!("Layouting tree with root {:?}", space);
+
         let size = taffy::Size {
             width: AvailableSpace::Definite(space.width as f32),
             height: AvailableSpace::Definite(space.height as f32),

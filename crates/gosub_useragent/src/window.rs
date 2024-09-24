@@ -5,7 +5,7 @@ use std::sync::mpsc::Sender;
 
 use anyhow::anyhow;
 use image::imageops::FilterType;
-use log::warn;
+use log::{info, warn};
 use url::Url;
 use winit::dpi::LogicalSize;
 use winit::event_loop::ActiveEventLoop;
@@ -91,17 +91,24 @@ impl<
             use winit::platform::web::WindowExtWebSys;
             let canvas = window.canvas().ok_or(anyhow!("Failed to get canvas"))?;
             let size = window.inner_size();
-
-
             canvas.set_id(&opts.id);
 
-            canvas.set_height(size.height);
-            canvas.set_width(size.width);
+            canvas.set_height(size.height.max(400));
+            canvas.set_width(size.width.max(600));
 
+            
             web_sys::window()
                 .and_then(|win| win.document())
-                .and_then(|doc| doc.body())
-                .and_then(|body| body.append_child(&canvas).ok())
+                .and_then(|doc| {
+                    
+                    if !opts.parent_id.is_empty() {
+                        doc.get_element_by_id(&opts.parent_id)
+                            .and_then(|el| el.append_child(&canvas).ok())
+                    } else {
+                        doc.body()
+                            .and_then(|body| body.append_child(&canvas).ok())
+                    }
+                })
                 .ok_or(anyhow!("Failed to append canvas to body"))?;
         }
 
@@ -127,6 +134,9 @@ impl<
         let data = backend.activate_window(self.window.clone(), &mut self.renderer_data, size)?;
 
         self.state = WindowState::Active { surface: data };
+        
+        // #[cfg(target_arch = "wasm32")]
+        // self.request_redraw();
 
         Ok(())
     }

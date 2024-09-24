@@ -5,7 +5,6 @@ use log::info;
 use vello::{AaConfig, DebugLayers, Render, RenderParams, Scene as VelloScene};
 use vello::kurbo::Point as VelloPoint;
 use vello::peniko::Color as VelloColor;
-use wgpu::web_sys::console::info;
 
 pub use border::*;
 pub use brush::*;

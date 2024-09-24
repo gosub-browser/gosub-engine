@@ -23,6 +23,16 @@ pub struct Tabs<
     _marker: std::marker::PhantomData<(B, L, LT)>,
 }
 
+impl<D: SceneDrawer<B, L, LT>, L: Layouter, LT: LayoutTree<L>, B: RenderBackend> Default for Tabs<D, B, L, LT> {
+    fn default() -> Self {
+        Self {
+            tabs: SlotMap::new(),
+            active: TabID::default(),
+            _marker: std::marker::PhantomData,
+        }
+    }
+}
+
 impl<
         D: SceneDrawer<B, L, LT, Doc, C>,
         L: Layouter,
@@ -60,9 +70,11 @@ impl<
     }
 
     pub(crate) fn from_url<P: Html5Parser<C, Document = Doc>>(url: Url, layouter: L, debug: bool) -> Result<Self> {
-        let tab = Tab::from_url::<P>(url, layouter, debug)?;
+        // let tab = Tab::from_url::<P>(url, layouter, debug)?;
+        //
+        // Ok(Self::new(tab))
 
-        Ok(Self::new(tab))
+        Ok(Self::default())
     }
 
     pub fn select_element(&mut self, id: LT::NodeId) {
@@ -128,5 +140,5 @@ impl<
     }
 }
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Default)]
 pub struct TabID(pub(crate) DefaultKey);

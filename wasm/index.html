@@ -11,13 +11,36 @@
         await init()
 
 
-        let opts = new RendererOptions("", "", "https://news.ycombinator.com/", true);
+        let opts = new RendererOptions("canvas", "canvas-wrapper", "https://news.ycombinator.com/", true);
 
 
         renderer(opts)
     </script>
+    
+    <style>
+        
+        #canvas {
+            width: 80vw;
+            height: 80vh;
+            background-color: #000;
+            margin-top: 2rem;
+            border-radius: 1rem;
+            border: cyan solid 2px;
+        }
+
+        #canvas-wrapper {
+            margin: 0 auto;
+            width: fit-content;
+            height: fit-content;
+        }
+        
+        
+    </style>
 </head>
 <body>
+
+
+<div id="canvas-wrapper"></div>
 
 </body>
 </html>
