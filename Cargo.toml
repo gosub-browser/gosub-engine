@@ -95,3 +95,6 @@ codegen-units = 1
 
 [lib]
 crate-type = ["staticlib", "cdylib", "rlib"]
+
+[package.metadata.wasm-pack.profile.dev.wasm-bindgen]
+dwarf-debug-info = true
