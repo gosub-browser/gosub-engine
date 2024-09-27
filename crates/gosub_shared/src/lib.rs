@@ -12,3 +12,5 @@ pub mod node;
 pub mod timing;
 pub mod traits;
 pub mod types;
+#[cfg(target_arch = "wasm32")]
+pub mod worker;
