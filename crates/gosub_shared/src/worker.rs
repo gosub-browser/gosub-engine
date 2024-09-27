@@ -35,6 +35,36 @@ impl WasmWorker {
 
         Ok(())
     }
+    
+    pub fn execute_blocking(&mut self, f: impl FnOnce() + Send + 'static) -> Result<()> {
+        let block = Arc::new(AtomicBool::new(false));
+        
+        let block_clone = block.clone();
+
+        let closure = || {
+            f();
+            
+            block_clone.store(true, Ordering::Relaxed);
+        };
+        
+        
+        let work = Box::new(Work {
+            f: Box::new(closure),
+        });
+        
+        let ptr = Box::into_raw(work) as *mut _ as usize;
+        
+        self.worker.post_message(&JsValue::from(ptr))?;
+        
+        
+        
+        while block.load(Ordering::Relaxed) {
+            std::hint::spin_loop();
+        }
+        
+        Ok(())
+        
+    }
 
 
     pub fn execute_blocking_return<R>(&mut self, f: impl FnOnce() -> R + Send + 'static) -> Result<R> {
@@ -94,4 +124,11 @@ impl WasmWorker {
         Ok(res)
         
     }
+}
+
+
+#[cfg(target_arch = "wasm32")]
+pub fn wasm_execute_work(ptr: usize) {
+    let work = unsafe { Box::from_raw(ptr as *mut Work) };
+    (work.f)();
 }
