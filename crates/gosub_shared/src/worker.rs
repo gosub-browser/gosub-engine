@@ -1,3 +1,4 @@
+use std::future::Future;
 use std::sync::{Arc, Mutex};
 use std::sync::atomic::{AtomicBool, AtomicU8, Ordering};
 
@@ -122,6 +123,31 @@ impl WasmWorker {
         };
         
         Ok(res)
+        
+    }
+    
+    
+    pub fn async_blocking(&mut self, f: impl FnOnce() -> impl Future<Output = ()> + Send + 'static) -> Result<()> {
+        let block = Arc::new(AtomicBool::new(false));
+        
+        let block_clone = block.clone();
+
+        let closure = || async {
+            f();
+            
+            block_clone.store(true, Ordering::Relaxed);
+        };
+        
+        
+        let work = Box::new(Work {
+            f: Box::new(closure),
+        });
+        
+        let ptr = Box::into_raw(work) as *mut _ as usize;
+        
+        self.worker.post_message(&JsValue::from(ptr))?;
+        
+        Ok(())
         
     }
 }
