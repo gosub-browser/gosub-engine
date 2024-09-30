@@ -1,3 +1,4 @@
+use std::future::Future;
 use std::sync::mpsc::Sender;
 
 use anyhow::anyhow;
@@ -33,7 +34,7 @@ pub trait SceneDrawer<B: RenderBackend, L: Layouter, LT: LayoutTree<L>, D: Docum
     fn mouse_move(&mut self, backend: &mut B, x: FP, y: FP) -> bool;
 
     fn scroll(&mut self, point: Point);
-    fn from_url<P>(url: Url, layouter: L, debug: bool) -> Result<Self>
+    fn from_url<P>(url: Url, layouter: L, debug: bool) -> impl Future<Output = Result<Self>>
     where
         Self: Sized,
         P: Html5Parser<C, Document = D>;
@@ -186,11 +187,11 @@ where
         self.dirty = true;
     }
 
-    fn from_url<P>(url: Url, layouter: L, debug: bool) -> Result<Self>
+    async fn from_url<P>(url: Url, layouter: L, debug: bool) -> Result<Self>
     where
         P: Html5Parser<C, Document = D>,
     {
-        let (rt, fetcher) = load_html_rendertree::<L, P, C>(url.clone())?;
+        let (rt, fetcher) = load_html_rendertree::<L, P, C>(url.clone()).await?;
 
         Ok(Self::new(rt, layouter, fetcher, debug))
     }

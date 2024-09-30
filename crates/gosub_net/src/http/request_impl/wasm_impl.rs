@@ -1,19 +1,20 @@
+use crate::http::fetcher::RequestAgent;
+use crate::http::headers::Headers;
+use crate::http::request::Request;
+use crate::http::response::Response;
+use anyhow::anyhow;
+use gosub_shared::types::Result;
+use gosub_shared::worker::WasmWorker;
+use js_sys::{ArrayBuffer, Promise, Uint8Array};
+use log::info;
 use std::error::Error;
 use std::fmt::{Debug, Display, Formatter};
 use std::future::Future;
 use std::pin::Pin;
 use std::task::{Context, Poll};
-use anyhow::anyhow;
-use js_sys::{ArrayBuffer, Promise, Uint8Array};
 use wasm_bindgen_futures::JsFuture;
-use web_sys::{RequestInit, RequestMode};
 use web_sys::wasm_bindgen::JsCast;
-use gosub_shared::types::Result;
-use gosub_shared::worker::WasmWorker;
-use crate::http::fetcher::RequestAgent;
-use crate::http::headers::Headers;
-use crate::http::request::Request;
-use crate::http::response::Response;
+use web_sys::{RequestInit, RequestMode};
 
 #[derive(Debug)]
 pub struct WasmAgent;
@@ -38,68 +39,48 @@ impl RequestAgent for WasmAgent {
         Self
     }
 
-    fn get(&self, url: &str) -> Result<Response> {
+    async fn get(&self, url: &str) -> Result<Response> {
+        info!("Fetching: {:?}", url);
 
-        let mut worker = WasmWorker::new()?;
-        
-        let url = url.to_string();
+        let opts = RequestInit::new();
 
-        // This is safe to do, because we only move the future once to the other thread and then never again
-        //Our captures are also Send (url)
-        Ok(worker.async_blocking_return(UnsafeFuture::from(|| async move {
-            let opts = RequestInit::new();
+        opts.set_method("GET");
+        opts.set_mode(RequestMode::Cors);
 
-            opts.set_method("GET");
-            opts.set_mode(RequestMode::Cors);
+        let req = web_sys::Request::new_with_str_and_init(&url, &opts)
+            .map_err(|e| anyhow!(e.as_string().unwrap_or("<unknown>".into())))?;
 
-            let req = web_sys::Request::new_with_str_and_init(&url, &opts)
-                .map_err(|e| anyhow!(e.as_string().unwrap_or("<unknown>".into())))?;
+        let res = fetch(req).await?;
 
-            let res = fetch(req).await?;
-            
-            Result::Ok(res)
-        }))??)
+        Ok(res)
     }
 
-    fn get_req(
+    async fn get_req(
         &self,
         req: &Request,
     ) -> Result<Response> {
+        let opts = RequestInit::new();
 
-        let mut worker = WasmWorker::new()?;
-        
-        let req = req.clone();
+        opts.set_method(&req.method);
+        opts.set_mode(RequestMode::Cors);
 
-        // This is safe to do, because we only move the future once to the other thread and then never again
-        //Our captures are also Send (req)
-        Ok(worker.async_blocking_return(UnsafeFuture::from(|| async move {
-            let opts = RequestInit::new();
+        opts.set_body(&req.body.clone().into());
 
-            opts.set_method(&req.method);
-            opts.set_mode(RequestMode::Cors);
+        //TODO: headers, version, cookies
 
-            opts.set_body(&req.body.clone().into());
+        let req = web_sys::Request::new_with_str_and_init(&req.uri, &opts)
+            .map_err(|e| anyhow!(e.as_string().unwrap_or("<unknown>".into())))?;
 
-            //TODO: headers, version, cookies
-
-            let req = web_sys::Request::new_with_str_and_init(&req.uri, &opts)
-                .map_err(|e| anyhow!(e.as_string().unwrap_or("<unknown>".into())))?;
-
-            fetch(req).await
-        }))??)
-
-
-
-
+        fetch(req).await
     }
 }
 
-struct UnsafeFuture<F: FnOnce() -> Fut, Fut: Future> {
+struct UnsafeFuture<F: Future> {
     inner: F,
 }
 
 
-impl<F: FnOnce() -> Fut, Fut: Future> From<F> for UnsafeFuture<F, Fut> {
+impl<F: Future> From<F> for UnsafeFuture<F> {
     fn from(inner: F) -> Self {
         Self {
             inner,
@@ -109,28 +90,31 @@ impl<F: FnOnce() -> Fut, Fut: Future> From<F> for UnsafeFuture<F, Fut> {
 
 
 /// Generally this is NOT safe to do, but in this context, 
-unsafe impl<F: FnOnce() -> Ret + Future, Ret> Send for UnsafeFuture<F, Ret> {}
+unsafe impl<F: Future> Send for UnsafeFuture<F> {}
 
 
-impl<F: FnOnce() -> Fut, Fut: Future> Future for UnsafeFuture<F, Fut> {
-    type Output =  Fut::Output;
+impl<F: Future> Future for UnsafeFuture<F> {
+    type Output = F::Output;
 
 
     fn poll(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
-        
-        let pin = unsafe { Pin::new_unchecked(&mut self.get_mut().inner) };
-        
-        
-        Fut::poll(pin, cx)
-    }
 
+
+        //it's going to be fine, I js_sys::Promise
+        let pin = unsafe { Pin::new_unchecked(&mut self.get_unchecked_mut().inner) };
+
+
+        F::poll(pin, cx)
+    }
 }
 
 
 async fn fetch(req: web_sys::Request) -> Result<Response> {
+    info!("Fetching (worker): {:?}", req.url());
+
     let window = web_sys::window().ok_or(anyhow!("No window"))?;
 
-    
+
     let resp = JsFuture::from(window.fetch_with_request(&req)).await
         .map_err(|e| anyhow!(e.as_string().unwrap_or("<unknown>".into())))?;
 
@@ -153,9 +137,7 @@ async fn fetch(req: web_sys::Request) -> Result<Response> {
     // }
 
 
-
     let cookies = Default::default();
-
 
 
     let buf = JsFuture::from(

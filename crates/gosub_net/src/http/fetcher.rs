@@ -1,6 +1,6 @@
 use std::error::Error;
 use std::fmt::Debug;
-
+use std::future::Future;
 use anyhow::bail;
 use url::{ParseError, Url};
 
@@ -16,9 +16,9 @@ pub trait RequestAgent: Debug {
 
     fn new() -> Self;
 
-    fn get(&self, url: &str) -> Result<Response>;
+    fn get(&self, url: &str) -> impl Future<Output = Result<Response>>;
 
-    fn get_req(&self, req: &Request) -> Result<Response>;
+    fn get_req(&self, req: &Request) -> impl Future<Output = Result<Response>>;
 }
 
 #[derive(Debug)]
@@ -35,11 +35,11 @@ impl Fetcher {
         }
     }
 
-    pub fn get_url(&self, url: &Url) -> Result<Response> {
+    pub async fn get_url(&self, url: &Url) -> Result<Response> {
         let scheme = url.scheme();
 
         let resp = if scheme == "http" || scheme == "https" {
-            self.client.get(url.as_str())?
+            self.client.get(url.as_str()).await?
         } else if scheme == "file" {
             let path = &url.as_str()[7..];
 
@@ -53,10 +53,10 @@ impl Fetcher {
         Ok(resp)
     }
 
-    pub fn get(&self, url: &str) -> Result<Response> {
+    pub async fn get(&self, url: &str) -> Result<Response> {
         let url = self.parse_url(url)?;
 
-        self.get_url(&url)
+        self.get_url(&url).await
     }
 
     pub fn get_req(&self, _url: &Request) {

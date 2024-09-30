@@ -3,6 +3,7 @@ use std::io::Cursor;
 use anyhow::anyhow;
 
 use gosub_net::http::fetcher::Fetcher;
+use gosub_net::http::response::Response;
 use gosub_render_backend::svg::SvgRenderer;
 use gosub_render_backend::{Image as _, ImageBuffer, RenderBackend, SizeU32};
 use gosub_shared::types::Result;
@@ -13,7 +14,11 @@ pub fn request_img<B: RenderBackend>(
     url: &str,
     size: Option<SizeU32>,
 ) -> Result<ImageBuffer<B>> {
-    let res = fetcher.get(url)?;
+    
+    
+    let res: Response = todo!();
+    
+    // let res = fetcher.get(url)?;
 
     if !res.is_ok() {
         return Err(anyhow!("Could not get url. Status code {}", res.status));

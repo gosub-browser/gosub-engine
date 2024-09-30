@@ -75,7 +75,7 @@ impl<
         C: CssSystem,
     > Window<'a, D, B, L, LT, Doc, C>
 {
-    pub fn new<P: Html5Parser<C, Document = Doc>>(
+    pub async fn new<P: Html5Parser<C, Document = Doc>>(
         event_loop: &ActiveEventLoop,
         backend: &mut B,
         layouter: L,
@@ -119,7 +119,7 @@ impl<
             state: WindowState::Suspended,
             window,
             renderer_data,
-            tabs: Tabs::from_url::<P>(default_url, layouter, debug)?,
+            tabs: Tabs::from_url::<P>(default_url, layouter, debug).await?,
         })
     }
 

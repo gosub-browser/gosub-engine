@@ -59,13 +59,13 @@ impl<B: RenderBackend, L: Layouter, D: Document<C>, C: CssSystem> TreeDrawer<B, 
 //     pub data: RenderNodeData<L>,
 // }
 
-pub(crate) fn load_html_rendertree<L: Layouter, P: Html5Parser<C>, C: CssSystem>(
+pub(crate) async fn load_html_rendertree<L: Layouter, P: Html5Parser<C>, C: CssSystem>(
     url: Url,
 ) -> gosub_shared::types::Result<(RenderTree<L, P::Document, C>, Fetcher)> {
     let fetcher = Fetcher::new(url.clone());
     let html = if url.scheme() == "http" || url.scheme() == "https" {
         // Fetch the html from the url
-        let response = fetcher.get(url.as_ref())?;
+        let response = fetcher.get(url.as_ref()).await?;
         if response.status != 200 {
             bail!(format!(
                 "Could not get url. Status code {}",

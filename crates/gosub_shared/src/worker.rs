@@ -1,11 +1,15 @@
+use std::fmt::format;
 use std::future::Future;
-use std::sync::{Arc, Mutex};
+use std::sync::{Arc, Barrier, Condvar, Mutex};
 use std::sync::atomic::{AtomicBool, AtomicU8, Ordering};
-
+use std::thread::yield_now;
 use anyhow::anyhow;
+use js_sys::{Array, Atomics, SharedArrayBuffer};
 use js_sys::wasm_bindgen::JsValue;
-use web_sys::Worker;
-
+use wasm_bindgen::prelude::wasm_bindgen;
+use web_sys::{console, Worker, WorkerOptions, WorkerType};
+use log::info;
+use web_sys::console::info;
 use crate::types::Result;
 
 pub struct WasmWorker {
@@ -20,11 +24,49 @@ pub struct Work {
 
 impl WasmWorker {
     pub fn new() -> Result<Self> {
-        let worker = Worker::new("worker.js")
-            .map_err(|e| anyhow::Error::msg(e.as_string().unwrap_or("<unknown error>".into())))?;
+
+
+        let opts = WorkerOptions::new();
+        opts.set_type(WorkerType::Module);
+        
+        
+        
+        let undefined = JsValue::UNDEFINED;
+        
+        
+
+        let worker = Worker::new_with_options("worker.js", &opts)
+            .map_err(|e| anyhow!("{:?}", e))?;
+
+
+        info!("Worker created (main)");
+
+
+
+        // let array = Array::new();
+        // 
+        // array.push(&wasm_bindgen::module());
+        // array.push(&wasm_bindgen::memory());
+        // 
+        // worker.post_message(&array)
+        //     .map_err(|e| {console::log_1(&e); e})
+        //     .map_err(|e| anyhow!("{:?}", e))
+        //     .map_err(|e|  {info!("Error sending module and memory to worker: {:?}", e); e})?;
+        // 
+        // 
+        // 
+        // info!("Sending module and memory to worker");
+
+
         Ok(Self {
             worker,
         })
+
+
+
+
+
+
     }
 
     pub fn execute(&mut self, f: impl FnOnce() + Send + 'static) -> Result<()> {
@@ -35,10 +77,14 @@ impl WasmWorker {
         let ptr = Box::into_raw(work) as *mut _ as usize;
 
         self.worker.post_message(&JsValue::from(ptr))
-            .map_err(|e| anyhow::Error::msg(e.as_string().unwrap_or("<unknown error>".into())))?;
+            .map_err(|e| anyhow!("{:?}", e))?;
 
         Ok(())
     }
+    
+    
+    
+    
 
     pub fn execute_blocking(&mut self, f: impl FnOnce() + Send + 'static) -> Result<()> {
         let block = Arc::new(AtomicBool::new(false));
@@ -58,8 +104,9 @@ impl WasmWorker {
 
         let ptr = Box::into_raw(work) as *mut _ as usize;
 
+        info!("Posting message");
         self.worker.post_message(&JsValue::from(ptr))
-            .map_err(|e| anyhow::Error::msg(e.as_string().unwrap_or("<unknown error>".into())))?;
+            .map_err(|e| anyhow!("{:?}", e))?;
 
 
         while block.load(Ordering::Relaxed) {
@@ -103,8 +150,9 @@ impl WasmWorker {
 
         let ptr = Box::into_raw(work) as *mut _ as usize;
 
+        info!("Posting message");
         self.worker.post_message(&JsValue::from(ptr))
-            .map_err(|e| anyhow::Error::msg(e.as_string().unwrap_or("<unknown error>".into())))?;
+            .map_err(|e| anyhow!("{:?}", e))?;
 
 
         while block.load(Ordering::Relaxed) == 0 {
@@ -148,20 +196,21 @@ impl WasmWorker {
 
         let ptr = Box::into_raw(work) as *mut _ as usize;
 
+        info!("Posting message");
         self.worker.post_message(&JsValue::from(ptr))
-            .map_err(|e| anyhow::Error::msg(e.as_string().unwrap_or("<unknown error>".into())))?;
+            .map_err(|e| anyhow!("{:?}", e))?;
 
         Ok(())
     }
-    pub fn async_blocking_return<F: Future>(&mut self, f: F) -> Result<F::Output> {
+    pub fn async_blocking_return<F: Future + 'static>(&mut self, f: F) -> Result<F::Output> {
 
 
         // 0 = block
         // 1 = finished
         // 2 = lock error
 
-        let block = Arc::new(AtomicU8::new(0));
 
+        let block = Arc::new(AtomicU8::new(0));
         let ret = Arc::new(Mutex::new(None));
 
 
@@ -174,6 +223,8 @@ impl WasmWorker {
 
                 let Ok(mut lock) = ret_clone.lock() else {
                     block_clone.store(2, Ordering::Relaxed);
+
+
                     return;
                 };
 
@@ -181,6 +232,7 @@ impl WasmWorker {
 
 
                 block_clone.store(1, Ordering::Relaxed);
+
             })
         };
 
@@ -191,11 +243,15 @@ impl WasmWorker {
 
         let ptr = Box::into_raw(work) as *mut _ as usize;
 
+        info!("Posting message");
         self.worker.post_message(&JsValue::from(ptr))
-            .map_err(|e| anyhow::Error::msg(e.as_string().unwrap_or("<unknown error>".into())))?;
+            .map_err(|e| anyhow!("{:?}", e))?;
+
+
+
 
         while block.load(Ordering::Relaxed) == 0 {
-            std::hint::spin_loop();
+            yield_now();
         }
 
         if block.load(Ordering::Relaxed) == 2 {
@@ -212,11 +268,12 @@ impl WasmWorker {
 
         Ok(ret)
     }
+}
 
 
-    #[cfg(target_arch = "wasm32")]
-    pub fn wasm_execute_work(ptr: usize) {
-        let work = unsafe { Box::from_raw(ptr as *mut Work) };
-        (work.f)();
-    }
+
+#[wasm_bindgen]
+pub fn wasm_execute_work(ptr: usize) {
+    let work = unsafe { Box::from_raw(ptr as *mut Work) };
+    (work.f)();
 }

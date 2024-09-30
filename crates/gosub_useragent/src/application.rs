@@ -1,4 +1,6 @@
+use std::cell::RefCell;
 use std::collections::HashMap;
+use std::rc::Rc;
 use std::sync::mpsc;
 
 use anyhow::anyhow;
@@ -9,8 +11,8 @@ use winit::event::WindowEvent;
 use winit::event_loop::{ActiveEventLoop, EventLoop, EventLoopProxy};
 use winit::window::WindowId;
 
+use gosub_render_backend::layout::{LayoutTree, Layouter};
 use gosub_render_backend::{NodeDesc, RenderBackend};
-use gosub_render_backend::layout::{Layouter, LayoutTree};
 use gosub_renderer::draw::SceneDrawer;
 use gosub_shared::traits::css3::CssSystem;
 use gosub_shared::traits::document::Document;
@@ -21,7 +23,6 @@ use crate::window::Window;
 
 #[derive(Debug, Default)]
 pub struct WindowOptions {
-    
     #[cfg(target_arch = "wasm32")] pub id: String,
     #[cfg(target_arch = "wasm32")] pub parent_id: String,
 }
@@ -60,7 +61,7 @@ impl<
         B: RenderBackend,
         L: Layouter,
         LT: LayoutTree<L>,
-        Doc: Document<C>,
+Doc: Document<C>,
         C: CssSystem,
         P: Html5Parser<C, Document = Doc>,
     > ApplicationHandler<CustomEvent> for Application<'a, D, B, L, LT, Doc, C, P>
@@ -97,10 +98,14 @@ impl<
                     }
                 };
 
+
+
                 if let Err(e) = window.resumed(&mut self.backend) {
                     error!("Error resuming window: {e:?}");
                     return;
                 }
+
+
                 self.windows.insert(window.id(), window);
             }
             CustomEvent::CloseWindow(id) => {
@@ -111,8 +116,6 @@ impl<
                 }
             }
             CustomEvent::OpenInitial => {
-
-
                 info!("Opening initial windows");
 
                 for (urls, opts) in self.open_windows.drain(..) {
@@ -189,7 +192,7 @@ impl<
         B: RenderBackend,
         L: Layouter,
         LT: LayoutTree<L>,
-        Doc: Document<C>,
+Doc: Document<C>,
         C: CssSystem,
         P: Html5Parser<C, Document = Doc>,
     > Application<'a, D, B, L, LT, Doc, C, P>
