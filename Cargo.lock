@@ -1643,10 +1643,13 @@ dependencies = [
  "gosub_shared",
  "hickory-resolver",
  "http",
+ "js-sys",
  "log",
  "thiserror",
  "ureq",
  "url",
+ "wasm-bindgen-futures",
+ "web-sys",
 ]
 
 [[package]]
@@ -1712,6 +1715,7 @@ dependencies = [
  "thiserror",
  "url",
  "uuid",
+ "wasm-bindgen-futures",
  "wasm-bindgen-test",
  "web-sys",
 ]

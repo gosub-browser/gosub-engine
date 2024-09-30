@@ -2,7 +2,7 @@ use std::fmt::Debug;
 
 use anyhow::anyhow;
 use log::info;
-use vello::{AaConfig, DebugLayers, Render, RenderParams, Scene as VelloScene};
+use vello::{AaConfig, DebugLayers, RenderParams, Scene as VelloScene};
 use vello::kurbo::Point as VelloPoint;
 use vello::peniko::Color as VelloColor;
 
