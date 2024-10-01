@@ -12,9 +12,11 @@ use std::fmt::{Debug, Display, Formatter};
 use std::future::Future;
 use std::pin::Pin;
 use std::task::{Context, Poll};
+use js_sys::wasm_bindgen::JsValue;
 use wasm_bindgen_futures::JsFuture;
 use web_sys::wasm_bindgen::JsCast;
 use web_sys::{RequestInit, RequestMode};
+use web_sys::console::info;
 
 #[derive(Debug)]
 pub struct WasmAgent;
@@ -48,7 +50,7 @@ impl RequestAgent for WasmAgent {
         opts.set_mode(RequestMode::Cors);
 
         let req = web_sys::Request::new_with_str_and_init(&url, &opts)
-            .map_err(|e| anyhow!(e.as_string().unwrap_or("<unknown>".into())))?;
+            .map_err(|e| anyhow!("{e:?}"))?;
 
         let res = fetch(req).await?;
 
@@ -67,9 +69,9 @@ impl RequestAgent for WasmAgent {
         opts.set_body(&req.body.clone().into());
 
         //TODO: headers, version, cookies
-
+        
         let req = web_sys::Request::new_with_str_and_init(&req.uri, &opts)
-            .map_err(|e| anyhow!(e.as_string().unwrap_or("<unknown>".into())))?;
+            .map_err(|e| anyhow!("{e:?}"))?;
 
         fetch(req).await
     }
@@ -116,10 +118,12 @@ async fn fetch(req: web_sys::Request) -> Result<Response> {
 
 
     let resp = JsFuture::from(window.fetch_with_request(&req)).await
-        .map_err(|e| anyhow!(e.as_string().unwrap_or("<unknown>".into())))?;
+        .map_err(|e| anyhow!("{e:?}"))?;
 
     let resp: web_sys::Response = resp.dyn_into()
-        .map_err(|e| anyhow!(e.as_string().unwrap_or("<unknown>".into())))?;
+        .map_err(|e| anyhow!("{e:?}"))?;
+    
+    
 
     // let req_headers = resp.headers();
 
@@ -142,17 +146,23 @@ async fn fetch(req: web_sys::Request) -> Result<Response> {
 
     let buf = JsFuture::from(
         resp.array_buffer()
-            .map_err(|e| anyhow!(e.as_string().unwrap_or("<unknown>".into())))?
+            .map_err(|e| anyhow!("{e:?}"))?
     ).await
-        .map_err(|e| anyhow!(e.as_string().unwrap_or("<unknown>".into())))?;
+        .map_err(|e| anyhow!("{e:?}"))?;
 
 
     let array: ArrayBuffer = buf.dyn_into()
-        .map_err(|e| anyhow!(e.as_string().unwrap_or("<unknown>".into())))?;
+        .map_err(|e| anyhow!("{e:?}"))?;
 
     let body = Uint8Array::new(&array).to_vec();
+    
+    
+    info!("Response: {:?}", body.len());
+    info!("Status: {:?}", resp.status());
+    info!("Status Text: {:?}", resp.status_text());
 
-
+    
+    
     Ok(Response {
         status: resp.status(),
         status_text: resp.status_text(),

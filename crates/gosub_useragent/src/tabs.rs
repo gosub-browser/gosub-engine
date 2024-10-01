@@ -1,7 +1,8 @@
 use slotmap::{DefaultKey, SlotMap};
 use std::sync::mpsc::Sender;
+use log::info;
 use url::Url;
-
+use web_sys::console::info;
 use gosub_render_backend::layout::{LayoutTree, Layouter};
 use gosub_render_backend::{NodeDesc, RenderBackend};
 use gosub_renderer::draw::SceneDrawer;
@@ -94,6 +95,7 @@ impl<
     }
 }
 
+#[derive(Debug)]
 pub struct Tab<
     D: SceneDrawer<B, L, LT, Doc, C>,
     B: RenderBackend,
@@ -128,6 +130,8 @@ impl<
 
     pub async fn from_url<P: Html5Parser<C, Document = Doc>>(url: Url, layouter: L, debug: bool) -> Result<Self> {
         let data = D::from_url::<P>(url.clone(), layouter, debug).await?;
+
+        info!("Tab created: {}", url.as_str());
 
         Ok(Self {
             title: url.as_str().to_string(),

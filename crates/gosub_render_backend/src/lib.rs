@@ -16,7 +16,7 @@ pub trait WindowHandle: HasDisplayHandle + HasWindowHandle + Send + Sync + Clone
 
 impl<T> WindowHandle for T where T: HasDisplayHandle + HasWindowHandle + Send + Sync + Clone {}
 
-pub trait RenderBackend: Sized + Debug {
+pub trait RenderBackend: Sized + Debug + 'static {
     type Rect: Rect;
     type Border: Border<Self>;
     type BorderSide: BorderSide<Self>;

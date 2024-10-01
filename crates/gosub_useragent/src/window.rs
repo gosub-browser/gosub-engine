@@ -21,7 +21,7 @@ use gosub_shared::traits::html5::Html5Parser;
 use gosub_shared::types::Result;
 
 use crate::application::WindowOptions;
-use crate::tabs::Tabs;
+use crate::tabs::{Tab, TabID, Tabs};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum WindowState<'a, B: RenderBackend> {
@@ -75,12 +75,9 @@ impl<
         C: CssSystem,
     > Window<'a, D, B, L, LT, Doc, C>
 {
-    pub async fn new<P: Html5Parser<C, Document = Doc>>(
+    pub fn new<P: Html5Parser<C, Document = Doc>>(
         event_loop: &ActiveEventLoop,
         backend: &mut B,
-        layouter: L,
-        default_url: Url,
-        debug: bool,
         opts: WindowOptions,
     ) -> Result<Self> {
         let window = create_window(event_loop)?;
@@ -121,6 +118,23 @@ impl<
             renderer_data,
             tabs: Tabs::from_url::<P>(default_url, layouter, debug).await?,
         })
+    }
+
+    pub async fn open_tab(&mut self, url: Url, layouter: L, debug: bool) -> Result<()> {
+        let tab = Tab::from_url(url, layouter, debug).await?;
+        self.tabs.add_tab(tab);
+        Ok(())
+    }
+
+    pub fn add_tab(&mut self, tab: Tab<D, B, L, LT>) {
+        let id = self.tabs.add_tab(tab);
+
+        if self.tabs.active == TabID::default() {
+            self.tabs.activate_tab(id);
+        }
+
+
+        self.window.request_redraw();
     }
 
     pub fn resumed(&mut self, backend: &mut B) -> Result<()> {

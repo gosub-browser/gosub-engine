@@ -16,6 +16,9 @@ pub fn request_img<B: RenderBackend>(
 ) -> Result<ImageBuffer<B>> {
     
     
+    return Ok(ImageBuffer::Image(B::Image::from_img(image::DynamicImage::new_rgba8(1, 1))));
+    
+    
     let res: Response = todo!();
     
     // let res = fetcher.get(url)?;
