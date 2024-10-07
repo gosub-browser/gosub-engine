@@ -5,7 +5,7 @@ use std::sync::mpsc::Sender;
 
 use anyhow::anyhow;
 use image::imageops::FilterType;
-use log::{info, warn};
+use log::warn;
 use url::Url;
 use winit::dpi::LogicalSize;
 use winit::event_loop::ActiveEventLoop;
@@ -108,6 +108,9 @@ impl<
                 })
                 .ok_or(anyhow!("Failed to append canvas to body"))?;
         }
+        
+        #[cfg(not(target_arch = "wasm32"))]
+        let _ = opts;
 
         
         let renderer_data = backend.create_window_data(window.clone())?;

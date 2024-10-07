@@ -25,7 +25,7 @@ impl RequestAgent for UreqAgent {
 
     async fn get(&self, url: &str) -> gosub_shared::types::Result<Response> {
         let response = self.agent.get(url).call()?;
-        Ok(response.try_into()?)
+        response.try_into()
     }
 
     async fn get_req(&self, _req: &Request) -> gosub_shared::types::Result<Response> {

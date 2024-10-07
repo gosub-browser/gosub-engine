@@ -1,7 +1,7 @@
 use std::sync::{LazyLock, Mutex};
 
 use log::warn;
-use parley::fontique::{Collection, CollectionOptions, FallbackKey, Script, SourceCache, SourceCacheOptions};
+use parley::fontique::{FallbackKey, Script};
 use parley::layout::{Alignment, PositionedLayoutItem};
 use parley::style::{FontSettings, FontStack, FontStyle, FontVariation, FontWeight, StyleProperty};
 use parley::{FontContext, InlineBox, LayoutContext};

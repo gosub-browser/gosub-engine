@@ -1,5 +1,5 @@
 use std::sync::Arc;
-use log::{error, info};
+use log::info;
 use winit::event::{ElementState, MouseScrollDelta, WindowEvent};
 use winit::event_loop::ActiveEventLoop;
 use winit::keyboard::{KeyCode, PhysicalKey};

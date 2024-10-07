@@ -44,6 +44,7 @@ impl<B: RenderBackend> ImgCache<B> for ImageCache<B> {
 enum Entry<B: RenderBackend> {
     Pending,
     Image(ImageBuffer<B>),
+    #[allow(unused)]
     SizedImg(SizeU32, ImageBuffer<B>),
 }
 

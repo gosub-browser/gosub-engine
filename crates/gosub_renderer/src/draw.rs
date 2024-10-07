@@ -1,7 +1,5 @@
-use std::cell::LazyCell;
 use std::future::Future;
-use std::ops::Deref;
-use std::sync::{Arc, LazyLock, Mutex, Once};
+use std::sync::{Arc, Mutex};
 use std::sync::mpsc::Sender;
 
 use anyhow::anyhow;
@@ -321,7 +319,7 @@ where
 
             let size = node.layout.size_or().map(|x| x.u32());
 
-            let img = request_img::<B, L>(self.drawer.fetcher.clone(), self.svg.clone(), url, size, self.image_cache.clone(), self.rerender.clone())?;
+            let img = request_img::<B>(self.drawer.fetcher.clone(), self.svg.clone(), url, size, self.image_cache.clone(), self.rerender.clone())?;
 
             if size.is_none() {
                 size_change = Some(img.size());
@@ -492,7 +490,7 @@ fn render_bg<B: RenderBackend,  L: Layouter, C: CssSystem>(
     if let Some(url) = background_image {
         let size = node.layout.size_or().map(|x| x.u32());
 
-        let img = match request_img::<B, L>(fetcher.clone(), svg.clone(), url, size, img_cache, rerender) {
+        let img = match request_img::<B>(fetcher.clone(), svg.clone(), url, size, img_cache, rerender) {
             Ok(img) => img,
             Err(e) => {
                 eprintln!("Error loading image: {:?}", e);

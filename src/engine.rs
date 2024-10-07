@@ -166,6 +166,7 @@ mod tests {
     use gosub_css3::system::Css3System;
     use gosub_html5::document::document_impl::DocumentImpl;
     use gosub_html5::parser::Html5Parser;
+    use cookie::CookieJar:
 
     #[cfg(not(target_arch = "wasm32"))]
     #[test]

@@ -69,9 +69,9 @@ impl<
         self.tabs.get_mut(self.active.0)
     }
 
+    #[allow(unused)]
     pub(crate) async fn from_url<P: Html5Parser<C, Document = Doc>>(url: Url, layouter: L, debug: bool) -> Result<Self> {
         let tab = Tab::from_url::<P>(url, layouter, debug).await?;
-
         Ok(Self::new(tab))
     }
 
@@ -106,7 +106,7 @@ pub struct Tab<
     pub title: String,
     pub url: Url,
     pub data: D,
-    _marker: std::marker::PhantomData<fn() -> (B, L, LT, Doc, C)>,
+    _marker: std::marker::PhantomData<fn(B, L, LT, Doc, C)>,
 }
 
 impl<

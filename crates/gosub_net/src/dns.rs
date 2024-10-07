@@ -185,13 +185,13 @@ impl Dns {
 #[cfg(test)]
 mod test {
     use std::time::Instant;
+    use crate::dns::{ResolveType, Dns};
 
-    use simple_logger::SimpleLogger;
 
     #[test]
     fn resolver() {
         // Add simple logger, if not possible, that's fine too
-        let _ = SimpleLogger::new().init();
+        // let _ = SimpleLogger::new().init();
 
         let mut dns = Dns::new();
 
