@@ -28,11 +28,11 @@ pub trait LayoutTree<L: Layouter>: Sized + 'static{
     fn get_node(&mut self, id: Self::NodeId) -> Option<&mut Self::Node>;
 }
 
-pub trait Layouter: Sized + Clone + 'static {
-    type Cache: Default;
-    type Layout: Layout;
+pub trait Layouter: Sized + Clone + Send + 'static {
+    type Cache: Default + Send;
+    type Layout: Layout + Send;
 
-    type TextLayout: TextLayout;
+    type TextLayout: TextLayout + Send;
 
     const COLLAPSE_INLINE: bool;
 

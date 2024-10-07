@@ -91,7 +91,7 @@ impl<F: Future> From<F> for UnsafeFuture<F> {
 }
 
 
-/// Generally this is NOT safe to do, but in this context, 
+/// Generally this is NOT safe to do, but in this context, it is
 unsafe impl<F: Future> Send for UnsafeFuture<F> {}
 
 
@@ -100,8 +100,6 @@ impl<F: Future> Future for UnsafeFuture<F> {
 
 
     fn poll(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
-
-
         //it's going to be fine, I js_sys::Promise
         let pin = unsafe { Pin::new_unchecked(&mut self.get_unchecked_mut().inner) };
 

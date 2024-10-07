@@ -28,7 +28,7 @@ impl RequestAgent for UreqAgent {
         Ok(response.try_into()?)
     }
 
-    async fn get_req(&self, req: &Request) -> gosub_shared::types::Result<Response> {
+    async fn get_req(&self, _req: &Request) -> gosub_shared::types::Result<Response> {
         todo!()
     }
 }
