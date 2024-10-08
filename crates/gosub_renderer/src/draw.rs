@@ -70,7 +70,6 @@ where
     type ImgCache = ImageCache<B>;
 
     fn draw(&mut self, backend: &mut B, data: &mut B::WindowData<'_>, size: SizeU32, rerender: impl Fn() + Send + Sync + 'static) -> bool {
-
         let dirty = self.dirty.load(Ordering::Relaxed);
 
         if !dirty && self.size == Some(size) {
@@ -310,21 +309,12 @@ where
 
         let mut size_change = new_size;
 
-        if node.name == "img" {
-            let Some(handle) = self.drawer.tree.handle.as_ref() else {
-                return Err(anyhow!("No document handle"));
-            };
-
-            let doc = handle.get();
-
-            let dom_node = doc.node_by_id(id).ok_or(anyhow!("Node not found"))?;
-
-            let element = dom_node.get_element_data().ok_or(anyhow!("Node is not an element"))?;
-
-
-
+        if let RenderNodeData::Element(element) = &node.data {
+            if element.name == "img" {
+                
+                
                 println!("element is image");
-
+                
                 let src = element
                     .attribute("src")
                 .ok_or(anyhow!("Image element has no src attribute"))?;
@@ -335,7 +325,7 @@ where
 
             let img = request_img::<B>(self.drawer.fetcher.clone(), self.svg.clone(), url, size, self.image_cache.clone(), self.rerender.clone())?;
 
-            println!("got img {url}: {:?}", img.size());
+                println!("got img {url}: {:?}", img.size());
 
                 if size.is_none() {
                     size_change = Some(img.size());

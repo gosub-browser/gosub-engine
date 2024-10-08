@@ -1,4 +1,3 @@
-use log::info;
 use winit::event::{ElementState, MouseScrollDelta, WindowEvent};
 use winit::event_loop::ActiveEventLoop;
 use winit::keyboard::{KeyCode, PhysicalKey};
@@ -45,9 +44,6 @@ impl<
                 window.request_redraw();
             }
             WindowEvent::RedrawRequested => {
-
-                println!("Redrawing da shit");
-
                 let size = window.inner_size();
 
                 let size = SizeU32::new(size.width, size.height);
@@ -55,12 +51,11 @@ impl<
                 let Some(tab) = self.tabs.get_current_tab() else {
                     return Ok(());
                 };
-                
-                
+
+
                 let w = window.clone();
 
                 let redraw = tab.data.draw(backend, &mut self.renderer_data, size, move || {
-                    println!("Requesting da redraw");
                     w.request_redraw();
                 });
                 
@@ -69,8 +64,6 @@ impl<
                 if redraw {
                     self.request_redraw();
                 }
-
-                info!("Redraw requested");
             }
 
             WindowEvent::CursorMoved { position, .. } => {
