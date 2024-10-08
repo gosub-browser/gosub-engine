@@ -1,7 +1,7 @@
 use std::future::Future;
-use std::sync::{Arc, Mutex};
 use std::sync::atomic::Ordering;
 use std::sync::mpsc::Sender;
+use std::sync::{Arc, Mutex};
 
 use anyhow::anyhow;
 use log::warn;
@@ -12,10 +12,10 @@ use gosub_render_backend::geo::{Size, SizeU32, FP};
 use gosub_render_backend::layout::{Layout, LayoutTree, Layouter, TextLayout};
 use gosub_render_backend::svg::SvgRenderer;
 use gosub_render_backend::{Border, BorderSide, BorderStyle, Brush, Color, ImageBuffer, ImgCache, NodeDesc, Rect, RenderBackend, RenderBorder,
-    RenderRect, RenderText, Scene as TScene, Text, Transform};
+                           RenderRect, RenderText, Scene as TScene, Text, Transform};
 use gosub_rendering::position::PositionTree;
-use gosub_shared::async_executor::{WasmNotSend, WasmNotSendSync};
 use gosub_rendering::render_tree::{RenderNodeData, RenderTree, RenderTreeNode};
+use gosub_shared::async_executor::{WasmNotSend, WasmNotSendSync};
 use gosub_shared::node::NodeId;
 use gosub_shared::traits::css3::{CssProperty, CssPropertyMap, CssSystem};
 use gosub_shared::traits::document::Document;
@@ -31,17 +31,17 @@ use crate::render_tree::{load_html_rendertree, TreeDrawer};
 mod img;
 pub mod img_cache;
 
-pub trait SceneDrawer<B: RenderBackend, L: Layouter, LT: LayoutTree<L>, D: Document<C>, C: CssSystem>: WasmNotSend  + 'static {
+pub trait SceneDrawer<B: RenderBackend, L: Layouter, LT: LayoutTree<L>, D: Document<C>, C: CssSystem>: WasmNotSend + 'static {
     type ImgCache: ImgCache<B>;
 
     fn draw(&mut self, backend: &mut B, data: &mut B::WindowData<'_>, size: SizeU32, rerender: impl Fn() + Send + Sync + 'static) -> bool;
     fn mouse_move(&mut self, backend: &mut B, x: FP, y: FP) -> bool;
 
     fn scroll(&mut self, point: Point);
-    fn from_url<P>(url: Url, layouter: L, debug: bool) -> impl Future<Output = Result<Self>> + WasmNotSend
+    fn from_url<P>(url: Url, layouter: L, debug: bool) -> impl Future<Output=Result<Self>> + WasmNotSend
     where
         Self: Sized,
-        P: Html5Parser<C, Document = D>;
+        P: Html5Parser<C, Document=D>;
 
     fn clear_buffers(&mut self);
     fn toggle_debug(&mut self);
@@ -59,12 +59,12 @@ pub trait SceneDrawer<B: RenderBackend, L: Layouter, LT: LayoutTree<L>, D: Docum
 const DEBUG_CONTENT_COLOR: (u8, u8, u8) = (0, 192, 255); //rgb(0, 192, 255)
 const DEBUG_PADDING_COLOR: (u8, u8, u8) = (0, 255, 192); //rgb(0, 255, 192)
 const DEBUG_BORDER_COLOR: (u8, u8, u8) = (255, 72, 72); //rgb(255, 72, 72)
-                                                        // const DEBUG_MARGIN_COLOR: (u8, u8, u8) = (255, 192, 0);
+// const DEBUG_MARGIN_COLOR: (u8, u8, u8) = (255, 192, 0);
 
 type Point = gosub_shared::types::Point<FP>;
 
-impl<B: RenderBackend, L: Layouter, D: Document<C>, C: CssSystem> SceneDrawer<B, L, RenderTree<L, D, C>, D, C>
-    for TreeDrawer<B, L, D, C>
+impl<B: RenderBackend, L: Layouter, D: Document<C>, C: CssSystem> SceneDrawer<B, L, RenderTree<L, C>, D, C>
+for TreeDrawer<B, L, D, C>
 where
     <<B as RenderBackend>::Text as Text>::Font: From<<<L as Layouter>::TextLayout as TextLayout>::Font>,
 {
@@ -137,7 +137,7 @@ where
             backend.apply_scene(data, scene, self.scene_transform.clone());
         }
 
-        if self.dirty.load(Ordering::Relaxed)  {
+        if self.dirty.load(Ordering::Relaxed) {
             if let Some(id) = self.selected_element {
                 self.debug_annotate(id);
             }
@@ -209,7 +209,7 @@ where
 
     async fn from_url<P>(url: Url, layouter: L, debug: bool) -> Result<Self>
     where
-        P: Html5Parser<C, Document = D>,
+        P: Html5Parser<C, Document=D>,
     {
         let (rt, fetcher) = load_html_rendertree::<L, P, C>(url.clone()).await?;
 
@@ -259,8 +259,7 @@ struct Drawer<'s, 't, B: RenderBackend, L: Layouter, D: Document<C>, C: CssSyste
     drawer: &'t mut TreeDrawer<B, L, D, C>,
     svg: Arc<Mutex<B::SVGRenderer>>,
     rerender: Arc<dyn Fn() + Send + Sync>,
-    image_cache: Arc<Mutex<ImageCache<B>>>
-
+    image_cache: Arc<Mutex<ImageCache<B>>>,
 }
 
 impl<B: RenderBackend, L: Layouter, D: Document<C>, C: CssSystem> Drawer<'_, '_, B, L, D, C>
@@ -310,14 +309,19 @@ where
 
         let mut size_change = new_size;
 
-        if let RenderNodeData::Element(element) = &node.data {
-            if element.name == "img" {
+        if matches!(node.data, RenderNodeData::Element) && node.name == "img" {
+            let Some(handle) = self.drawer.tree.handle.as_ref() else {
+                return Err(anyhow!("No document handle"));
+            };
 
+            let doc = handle.get();
 
-                println!("element is image");
+            let dom_node = doc.node_by_id(id).ok_or(anyhow!("Node not found"))?;
 
-                let src = element
-                    .attribute("src")
+            let element = dom_node.get_element_data().ok_or(anyhow!("Node is not an element"))?;
+
+            let src = element
+                .attribute("src")
                 .ok_or(anyhow!("Image element has no src attribute"))?;
 
             let url = src.as_str();
@@ -326,10 +330,10 @@ where
 
             let img = request_img::<B>(self.drawer.fetcher.clone(), self.svg.clone(), url, size, self.image_cache.clone(), self.rerender.clone())?;
 
-                println!("got img {url}: {:?}", img.size());
+            println!("got img {url}: {:?}", img.size());
 
-                if size.is_none() {
-                    size_change = Some(img.size());
+            if size.is_none() {
+                size_change = Some(img.size());
             }
 
             let fit = node
@@ -407,7 +411,7 @@ fn render_text<B: RenderBackend, L: Layouter, C: CssSystem>(
     }
 }
 
-fn render_bg<B: RenderBackend,  L: Layouter, C: CssSystem>(
+fn render_bg<B: RenderBackend, L: Layouter, C: CssSystem>(
     node: &RenderTreeNode<L, C>,
     scene: &mut B::Scene,
     pos: &Point,

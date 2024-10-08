@@ -23,7 +23,7 @@ pub struct Tabs<
     _marker: std::marker::PhantomData<(B, L, LT)>,
 }
 
-impl<D: SceneDrawer<B, L, LT>, L: Layouter, LT: LayoutTree<L>, B: RenderBackend> Default for Tabs<D, B, L, LT> {
+impl<D: SceneDrawer<B, L, LT, Doc, C>, L: Layouter, LT: LayoutTree<L>, B: RenderBackend, Doc: Document<C>, C: CssSystem> Default for Tabs<D, B, L, LT, Doc, C> {
     fn default() -> Self {
         Self {
             tabs: SlotMap::new(),
