@@ -25,11 +25,16 @@ pub fn request_img<B: RenderBackend>(
     let img = cache.get(url);
 
     Ok(match img {
-        ImageCacheEntry::Image(img) => img.clone(),
+        ImageCacheEntry::Image(img) => {
+            println!("Image {url} found in cache");
+            img.clone()
+        },
         ImageCacheEntry::Pending => {
+            println!("Image {url} pending");
             ImageBuffer::Image(B::Image::from_img(image::DynamicImage::new_rgba8(1, 1)))
         }
         ImageCacheEntry::None => {
+            println!("Requesting image {url}");
             cache.add_pending(url.to_string());
 
             drop(cache);
@@ -37,6 +42,10 @@ pub fn request_img<B: RenderBackend>(
             let url = url.to_string();
 
             gosub_shared::async_executor::spawn(async move {
+
+
+                println!("Req img {url}");
+
                 if let Ok(img) = load_img::<B>(&url, fetcher, svg_renderer, size).await {
                     let mut cache = match img_cache.lock() {
                         Ok(cache) => cache,
@@ -47,6 +56,8 @@ pub fn request_img<B: RenderBackend>(
                     };
 
                     cache.add(url.to_string(), img.clone(), size);
+
+                    println!("letting it rerender");
 
                     rerender();
                 } else {
