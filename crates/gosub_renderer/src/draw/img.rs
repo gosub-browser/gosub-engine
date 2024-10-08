@@ -27,7 +27,7 @@ pub fn request_img<B: RenderBackend>(
     Ok(match img {
         ImageCacheEntry::Image(img) => img.clone(),
         ImageCacheEntry::Pending => {
-            ImageBuffer::Image(B::Image::from_img(image::DynamicImage::new_rgba8(1, 1)))
+            ImageBuffer::Image(B::Image::from_img(image::DynamicImage::new_rgba8(0, 0)))
         }
         ImageCacheEntry::None => {
             cache.add_pending(url.to_string());
@@ -64,7 +64,7 @@ pub fn request_img<B: RenderBackend>(
             });
 
 
-            ImageBuffer::Image(B::Image::from_img(DynamicImage::new_rgba8(1, 1)))
+            ImageBuffer::Image(B::Image::from_img(DynamicImage::new_rgba8(0, 0)))
         }
     })
 }
@@ -112,5 +112,5 @@ async fn load_img<B: RenderBackend>(
 const INVALID_IMG_BYTES: &[u8] = include_bytes!("../../../../resources/test_img.png");
 
 static INVALID_IMG: LazyLock<DynamicImage> = LazyLock::new(|| {
-    image::load_from_memory(INVALID_IMG_BYTES).unwrap_or(DynamicImage::new_rgba8(1, 1))
+    image::load_from_memory(INVALID_IMG_BYTES).unwrap_or(DynamicImage::new_rgba8(0, 0))
 });

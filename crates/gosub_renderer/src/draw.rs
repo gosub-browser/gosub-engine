@@ -14,6 +14,7 @@ use gosub_render_backend::svg::SvgRenderer;
 use gosub_render_backend::{Border, BorderSide, BorderStyle, Brush, Color, ImageBuffer, ImgCache, NodeDesc, Rect, RenderBackend, RenderBorder,
     RenderRect, RenderText, Scene as TScene, Text, Transform};
 use gosub_rendering::position::PositionTree;
+use gosub_shared::async_executor::{WasmNotSend, WasmNotSendSync};
 use gosub_rendering::render_tree::{RenderNodeData, RenderTree, RenderTreeNode};
 use gosub_shared::node::NodeId;
 use gosub_shared::traits::css3::{CssProperty, CssPropertyMap, CssSystem};
@@ -30,14 +31,14 @@ use crate::render_tree::{load_html_rendertree, TreeDrawer};
 mod img;
 pub mod img_cache;
 
-pub trait SceneDrawer<B: RenderBackend, L: Layouter, LT: LayoutTree<L>, D: Document<C>, C: CssSystem>: Send  + 'static {
+pub trait SceneDrawer<B: RenderBackend, L: Layouter, LT: LayoutTree<L>, D: Document<C>, C: CssSystem>: WasmNotSend  + 'static {
     type ImgCache: ImgCache<B>;
 
     fn draw(&mut self, backend: &mut B, data: &mut B::WindowData<'_>, size: SizeU32, rerender: impl Fn() + Send + Sync + 'static) -> bool;
     fn mouse_move(&mut self, backend: &mut B, x: FP, y: FP) -> bool;
 
     fn scroll(&mut self, point: Point);
-    fn from_url<P>(url: Url, layouter: L, debug: bool) -> impl Future<Output = Result<Self>> + Send
+    fn from_url<P>(url: Url, layouter: L, debug: bool) -> impl Future<Output = Result<Self>> + WasmNotSend
     where
         Self: Sized,
         P: Html5Parser<C, Document = D>;
@@ -311,10 +312,10 @@ where
 
         if let RenderNodeData::Element(element) = &node.data {
             if element.name == "img" {
-                
-                
+
+
                 println!("element is image");
-                
+
                 let src = element
                     .attribute("src")
                 .ok_or(anyhow!("Image element has no src attribute"))?;
