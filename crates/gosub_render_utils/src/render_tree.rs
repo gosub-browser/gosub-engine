@@ -414,9 +414,7 @@ impl<L: Layouter, C: CssSystem> RenderTree<L, C> {
     }
 }
 
-impl<L: Layouter, C: CssSystem> gosub_shared::traits::render_tree::RenderTree<C>
-    for RenderTree<L, C>
-{
+impl<L: Layouter, C: CssSystem> gosub_shared::traits::render_tree::RenderTree<C> for RenderTree<L, C> {
     type NodeId = NodeId;
     type Node = RenderTreeNode<L, C>;
 
@@ -451,7 +449,7 @@ impl<L: Layouter, C: CssSystem> gosub_shared::traits::render_tree::RenderTreeNod
 
 pub enum RenderNodeData<L: Layouter> {
     Document,
-    Element,
+    Element { attributes: HashMap<String, String> },
     Text(Box<TextData<L>>),
     AnonymousInline,
 }
@@ -460,7 +458,9 @@ impl<L: Layouter> Debug for RenderNodeData<L> {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
             RenderNodeData::Document => f.write_str("Document"),
-            RenderNodeData::Element => f.write_str("Element"),
+            RenderNodeData::Element { attributes } => {
+                f.debug_struct("Element").field("attributes", attributes).finish()
+            }
             RenderNodeData::Text(data) => f.debug_struct("TextData").field("data", data).finish(),
             RenderNodeData::AnonymousInline => f.write_str("AnonymousInline"),
         }
@@ -504,7 +504,9 @@ pub enum ControlFlow<T> {
 impl<L: Layouter> RenderNodeData<L> {
     pub fn from_node_data<N: DocumentNode<C>, C: CssSystem>(node: NodeData<C, N>) -> ControlFlow<Self> {
         ControlFlow::Ok(match node {
-            NodeData::Element(_) => RenderNodeData::Element,
+            NodeData::Element(d) => RenderNodeData::Element {
+                attributes: d.attributes().clone(),
+            },
             NodeData::Text(data) => {
                 let text = pre_transform_text(data.string_value());
 
@@ -564,7 +566,7 @@ impl<L: Layouter, C: CssSystem> Debug for RenderTreeNode<L, C> {
 impl<L: Layouter, C: CssSystem> RenderTreeNode<L, C> {
     /// Returns true if the node is an element node
     pub fn is_element(&self) -> bool {
-        matches!(self.data, RenderNodeData::Element)
+        matches!(self.data, RenderNodeData::Element { .. })
     }
 
     /// Returns true if the node is a text node
